@@ -14,6 +14,7 @@ import MenteeProfile from "./pages/MenteeProfile";
 import MentorProfile from "./pages/MentorProfile";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
+import Product from "./pages/Product";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/product" element={<Product />} />
               <Route path="/onboarding" element={
                 <ProtectedRoute>
                   <Onboarding />

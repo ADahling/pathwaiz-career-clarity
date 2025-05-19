@@ -28,6 +28,9 @@ const NavBar: React.FC = () => {
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-6">
+          <Link to="/product" className="text-black hover:text-pathwaiz-blue transition-colors">
+            Product
+          </Link>
           <Link to="/#how-it-works" className="text-black hover:text-pathwaiz-blue transition-colors">
             How It Works
           </Link>
@@ -92,6 +95,13 @@ const NavBar: React.FC = () => {
       {isMenuOpen && (
         <div className="md:hidden bg-white absolute top-full left-0 right-0 shadow-md py-4 animate-fade-in">
           <div className="container-custom flex flex-col space-y-4">
+            <Link 
+              to="/product" 
+              className="text-black hover:text-pathwaiz-blue transition-colors py-2"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Product
+            </Link>
             <Link 
               to="/#how-it-works" 
               className="text-black hover:text-pathwaiz-blue transition-colors py-2"
