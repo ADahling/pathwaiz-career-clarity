@@ -9,13 +9,121 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      mentee_profiles: {
+        Row: {
+          career_goals: string | null
+          career_interests: string[] | null
+          created_at: string | null
+          id: string
+          name: string | null
+          profile_image: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          career_goals?: string | null
+          career_interests?: string[] | null
+          created_at?: string | null
+          id: string
+          name?: string | null
+          profile_image?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          career_goals?: string | null
+          career_interests?: string[] | null
+          created_at?: string | null
+          id?: string
+          name?: string | null
+          profile_image?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentee_profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mentor_profiles: {
+        Row: {
+          bio: string | null
+          created_at: string | null
+          hourly_rate: number | null
+          id: string
+          industry: string | null
+          job_title: string | null
+          name: string | null
+          profile_image: string | null
+          updated_at: string | null
+          years_experience: number | null
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string | null
+          hourly_rate?: number | null
+          id: string
+          industry?: string | null
+          job_title?: string | null
+          name?: string | null
+          profile_image?: string | null
+          updated_at?: string | null
+          years_experience?: number | null
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string | null
+          hourly_rate?: number | null
+          id?: string
+          industry?: string | null
+          job_title?: string | null
+          name?: string | null
+          profile_image?: string | null
+          updated_at?: string | null
+          years_experience?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentor_profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id: string
+          role?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: { uid: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

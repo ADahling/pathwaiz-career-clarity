@@ -2,10 +2,21 @@
 import React, { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 const NavBar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, signOut, userRole } = useAuth();
+  const navigate = useNavigate();
+
+  const handleProfileClick = () => {
+    if (userRole === 'mentee') {
+      navigate('/mentee-profile');
+    } else if (userRole === 'mentor') {
+      navigate('/mentor-profile');
+    }
+  };
 
   return (
     <nav className="py-4 bg-white sticky top-0 z-50 shadow-sm">
@@ -26,12 +37,46 @@ const NavBar: React.FC = () => {
           <Link to="/#why-pathwaiz" className="text-black hover:text-pathwaiz-blue transition-colors">
             Why Pathwaiz
           </Link>
-          <Button variant="outline" className="border-black text-black hover:bg-gray-100">
-            Become a Mentor
-          </Button>
-          <Button className="bg-pathwaiz-blue text-white hover:bg-opacity-90">
-            Find a Mentor
-          </Button>
+          
+          {user ? (
+            <>
+              <Button 
+                variant="outline" 
+                className="border-black text-black hover:bg-gray-100"
+                onClick={handleProfileClick}
+              >
+                My Profile
+              </Button>
+              <Button 
+                className="bg-pathwaiz-blue text-white hover:bg-opacity-90"
+                onClick={() => signOut()}
+              >
+                Sign Out
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button 
+                variant="outline" 
+                className="border-black text-black hover:bg-gray-100"
+                onClick={() => navigate('/auth')}
+              >
+                Log In
+              </Button>
+              <Button 
+                className="bg-pathwaiz-blue text-white hover:bg-opacity-90"
+                onClick={() => {
+                  navigate('/auth');
+                  // Set the active tab to signup
+                  document.querySelector('[value="signup"]')?.dispatchEvent(
+                    new MouseEvent('click', { bubbles: true })
+                  );
+                }}
+              >
+                Sign Up
+              </Button>
+            </>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -68,19 +113,58 @@ const NavBar: React.FC = () => {
             >
               Why Pathwaiz
             </Link>
-            <Button 
-              variant="outline" 
-              className="border-black text-black hover:bg-gray-100 w-full"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Become a Mentor
-            </Button>
-            <Button 
-              className="bg-pathwaiz-blue text-white hover:bg-opacity-90 w-full"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Find a Mentor
-            </Button>
+            
+            {user ? (
+              <>
+                <Button 
+                  variant="outline" 
+                  className="border-black text-black hover:bg-gray-100 w-full"
+                  onClick={() => {
+                    handleProfileClick();
+                    setIsMenuOpen(false);
+                  }}
+                >
+                  My Profile
+                </Button>
+                <Button 
+                  className="bg-pathwaiz-blue text-white hover:bg-opacity-90 w-full"
+                  onClick={() => {
+                    signOut();
+                    setIsMenuOpen(false);
+                  }}
+                >
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button 
+                  variant="outline" 
+                  className="border-black text-black hover:bg-gray-100 w-full"
+                  onClick={() => {
+                    navigate('/auth');
+                    setIsMenuOpen(false);
+                  }}
+                >
+                  Log In
+                </Button>
+                <Button 
+                  className="bg-pathwaiz-blue text-white hover:bg-opacity-90 w-full"
+                  onClick={() => {
+                    navigate('/auth');
+                    setIsMenuOpen(false);
+                    // Set the active tab to signup
+                    setTimeout(() => {
+                      document.querySelector('[value="signup"]')?.dispatchEvent(
+                        new MouseEvent('click', { bubbles: true })
+                      );
+                    }, 100);
+                  }}
+                >
+                  Sign Up
+                </Button>
+              </>
+            )}
           </div>
         </div>
       )}
