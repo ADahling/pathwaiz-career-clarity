@@ -16,6 +16,7 @@ import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import Product from "./pages/Product";
 import HowItWorksPage from "./pages/HowItWorks";
+import FindAMentor from "./pages/FindAMentor";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/product" element={<Product />} />
               <Route path="/how-it-works" element={<HowItWorksPage />} />
+              <Route path="/find-a-mentor" element={<FindAMentor />} />
               <Route path="/onboarding" element={
                 <ProtectedRoute>
                   <Onboarding />
