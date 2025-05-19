@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { X, Check, Compass, MoneyWithWings } from 'lucide-react';
+import { X, Check, Compass, Banknote } from 'lucide-react';
 
 const ValueProposition: React.FC = () => {
   return (
@@ -62,7 +62,7 @@ const ValueProposition: React.FC = () => {
                 <span>Scheduled sessions with clear expectations</span>
               </li>
               <li className="flex items-start">
-                <MoneyWithWings className="w-5 h-5 text-pathwaiz-blue mr-3 mt-0.5" />
+                <Banknote className="w-5 h-5 text-pathwaiz-blue mr-3 mt-0.5" />
                 <span>Mentors get fairly compensated for their time</span>
               </li>
               <li className="flex items-start">

@@ -1,16 +1,16 @@
 
 import React from 'react';
-import { MortarBoard, ArrowsCounterclockwise, Briefcase } from 'lucide-react';
+import { Briefcase, ArrowUpFromLine, GraduationCap } from 'lucide-react';
 
 const AudienceSection: React.FC = () => {
   const audiences = [
     {
-      icon: <MortarBoard className="w-12 h-12 text-pathwaiz-blue" />,
+      icon: <GraduationCap className="w-12 h-12 text-pathwaiz-blue" />,
       title: "Students & Grads",
       description: "Exploring what job to pursue after school and wanting to make informed decisions.",
     },
     {
-      icon: <ArrowsCounterclockwise className="w-12 h-12 text-pathwaiz-blue" />,
+      icon: <ArrowUpFromLine className="w-12 h-12 text-pathwaiz-blue" />,
       title: "Career Changers",
       description: "Seeking a new direction without taking blind leaps into unfamiliar industries.",
     },
