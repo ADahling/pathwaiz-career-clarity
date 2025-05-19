@@ -12,6 +12,7 @@ import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import MenteeProfile from "./pages/MenteeProfile";
 import MentorProfile from "./pages/MentorProfile";
+import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,11 @@ const App = () => (
               <Route path="/mentor-profile" element={
                 <ProtectedRoute requiredRole="mentor">
                   <MentorProfile />
+                </ProtectedRoute>
+              } />
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <Dashboard />
                 </ProtectedRoute>
               } />
               <Route path="*" element={<NotFound />} />
