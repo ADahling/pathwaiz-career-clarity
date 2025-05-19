@@ -1,3 +1,6 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -96,6 +99,28 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-semibold;
+  }
+}
+
+@layer components {
+  .container-custom {
+    @apply container mx-auto px-4 md:px-8 max-w-7xl;
+  }
+  
+  .btn-primary {
+    @apply bg-pathwaiz-blue text-white px-6 py-3 rounded-full font-semibold hover:bg-opacity-90 transition-all;
+  }
+  
+  .btn-secondary {
+    @apply bg-white text-black px-6 py-3 rounded-full font-semibold border border-black hover:bg-gray-100 transition-all;
+  }
+  
+  .section-padding {
+    @apply py-16 md:py-24;
   }
 }
