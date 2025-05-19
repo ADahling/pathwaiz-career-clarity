@@ -15,6 +15,7 @@ import MentorProfile from "./pages/MentorProfile";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import Product from "./pages/Product";
+import HowItWorksPage from "./pages/HowItWorks";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/product" element={<Product />} />
+              <Route path="/how-it-works" element={<HowItWorksPage />} />
               <Route path="/onboarding" element={
                 <ProtectedRoute>
                   <Onboarding />
