@@ -1,67 +1,48 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import NavBar from '@/components/NavBar';
-import { Button } from '@/components/ui/button';
-import { 
-  Form, 
-  FormControl, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormMessage 
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import * as z from 'zod';
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
-import { 
-  User, 
-  Briefcase,
-  Building, 
-  Calendar, 
-  DollarSign, 
-  FileText,
-  Image as ImageIcon,
-  Save
-} from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import NavBar from '@/components/NavBar';
+import { Loader2, Upload } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
 
-const formSchema = z.object({
-  name: z.string().min(2, {
-    message: "Name must be at least 2 characters.",
-  }),
-  jobTitle: z.string().min(2, {
-    message: "Job title must be at least 2 characters.",
-  }),
-  industry: z.string().min(2, {
-    message: "Industry must be at least 2 characters.",
-  }),
-  yearsExperience: z.coerce.number().min(0, {
-    message: "Years of experience must be a positive number.",
-  }),
-  hourlyRate: z.coerce.number().min(0, {
-    message: "Hourly rate must be a positive number.",
-  }),
-  bio: z.string().min(10, {
-    message: "Bio must be at least 10 characters.",
-  }),
+// Define form schema
+const mentorProfileSchema = z.object({
+  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+  jobTitle: z.string().min(2, { message: "Job title must be at least 2 characters." }),
+  industry: z.string().min(2, { message: "Industry must be at least 2 characters." }),
+  yearsExperience: z.coerce.number().min(0, { message: "Years of experience must be 0 or greater." }),
+  hourlyRate: z.coerce.number().min(0, { message: "Hourly rate must be 0 or greater." }),
+  bio: z.string().min(10, { message: "Bio must be at least 10 characters." }).max(500, { message: "Bio must not exceed 500 characters." }),
 });
 
 const MentorProfile: React.FC = () => {
   const { user, userRole } = useAuth();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [existingData, setExistingData] = useState<any>(null);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [profileData, setProfileData] = useState<any>(null);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<z.infer<typeof mentorProfileSchema>>({
+    resolver: zodResolver(mentorProfileSchema),
     defaultValues: {
       name: "",
       jobTitle: "",
@@ -73,117 +54,123 @@ const MentorProfile: React.FC = () => {
   });
 
   useEffect(() => {
-    if (user) {
-      fetchExistingProfile();
+    if (userRole !== 'mentor') {
+      toast.error('You are not authorized to view this page');
+      navigate('/');
+      return;
     }
-  }, [user]);
 
-  useEffect(() => {
-    if (existingData) {
-      form.reset({
-        name: existingData.name || "",
-        jobTitle: existingData.job_title || "",
-        industry: existingData.industry || "",
-        yearsExperience: existingData.years_experience || 0,
-        hourlyRate: existingData.hourly_rate || 0,
-        bio: existingData.bio || "",
-      });
-      
-      if (existingData.profile_image) {
-        setImagePreview(existingData.profile_image);
-      }
-    }
-  }, [existingData, form]);
+    const fetchMentorProfile = async () => {
+      setIsLoading(true);
+      try {
+        if (!user) return;
 
-  const fetchExistingProfile = async () => {
-    try {
-      setLoading(true);
-      
-      const { data, error } = await supabase
-        .from('mentor_profiles')
-        .select('*')
-        .eq('id', user!.id)
-        .single();
-        
-      if (error && error.code !== 'PGRST116') {
-        // PGRST116 means no rows returned
-        throw error;
+        const { data, error } = await supabase
+          .from('mentor_profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          // PGRST116 is the code for "no rows returned" which is expected for new users
+          throw error;
+        }
+
+        if (data) {
+          setProfileData(data);
+          // Set form values from fetched data
+          form.reset({
+            name: data.name || "",
+            jobTitle: data.job_title || "",
+            industry: data.industry || "",
+            yearsExperience: data.years_experience || 0,
+            hourlyRate: data.hourly_rate || 0,
+            bio: data.bio || "",
+          });
+
+          // Set image preview if exists
+          if (data.profile_image) {
+            setImagePreview(data.profile_image);
+          }
+        }
+      } catch (error: any) {
+        console.error('Error fetching mentor profile:', error.message);
+        toast.error('Failed to load profile data');
+      } finally {
+        setIsLoading(false);
       }
-      
-      if (data) {
-        setExistingData(data);
-      }
-    } catch (error: any) {
-      console.error('Error fetching mentor profile:', error.message);
-      toast.error('Failed to load profile data');
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    fetchMentorProfile();
+  }, [user, userRole, navigate, form]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setProfileImage(file);
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image size should not exceed 5MB');
+        return;
+      }
       
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      // Check file type
+      if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
+        toast.error('Only JPEG, JPG and PNG formats are supported');
+        return;
+      }
+      
+      setProfileImage(file);
+      setImagePreview(URL.createObjectURL(file));
     }
   };
 
-  const uploadImage = async () => {
-    if (!profileImage || !user) return null;
+  const uploadImage = async (): Promise<string | null> => {
+    if (!profileImage || !user) return imagePreview;
     
+    setIsUploading(true);
     try {
+      // Create a unique file path with user ID as folder name
       const fileExt = profileImage.name.split('.').pop();
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-      const filePath = `profile-images/${fileName}`;
-      
-      const { error: uploadError } = await supabase
-        .storage
+      const filePath = `${user.id}/${uuidv4()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
         .from('mentor-images')
         .upload(filePath, profileImage);
-        
+
       if (uploadError) throw uploadError;
-      
-      const { data } = supabase
-        .storage
+
+      // Get the public URL for the uploaded image
+      const { data } = supabase.storage
         .from('mentor-images')
         .getPublicUrl(filePath);
-        
+
       return data.publicUrl;
     } catch (error: any) {
       console.error('Error uploading image:', error.message);
-      toast.error('Failed to upload profile image');
+      toast.error('Failed to upload image');
       return null;
+    } finally {
+      setIsUploading(false);
     }
   };
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    try {
-      setLoading(true);
-      
-      if (!user) {
-        toast.error('You must be logged in');
-        navigate('/auth');
-        return;
-      }
+  const onSubmit = async (values: z.infer<typeof mentorProfileSchema>) => {
+    if (!user) {
+      toast.error('You must be logged in to update your profile');
+      return;
+    }
 
-      let imageUrl = existingData?.profile_image || null;
-      
+    setIsLoading(true);
+
+    try {
+      // Upload image if selected
+      let imageUrl = imagePreview;
       if (profileImage) {
         imageUrl = await uploadImage();
-        if (!imageUrl) {
-          toast.error('Failed to upload profile image');
-          return;
-        }
       }
-      
-      const profileData = {
+
+      // Prepare the profile data
+      const profileUpdate = {
         id: user.id,
         name: values.name,
         job_title: values.jobTitle,
@@ -191,190 +178,215 @@ const MentorProfile: React.FC = () => {
         years_experience: values.yearsExperience,
         hourly_rate: values.hourlyRate,
         bio: values.bio,
-        profile_image: imageUrl,
+        profile_image: imageUrl
       };
-      
-      let operation;
-      if (existingData) {
-        operation = supabase
-          .from('mentor_profiles')
-          .update(profileData)
-          .eq('id', user.id);
-      } else {
-        operation = supabase
-          .from('mentor_profiles')
-          .insert([profileData]);
-      }
-      
-      const { error } = await operation;
-      
+
+      // Update or insert the mentor profile
+      const { error } = await supabase
+        .from('mentor_profiles')
+        .upsert(profileUpdate);
+
       if (error) throw error;
-      
-      toast.success(existingData ? 'Profile updated successfully!' : 'Profile created successfully!');
+
+      toast.success('Profile saved successfully');
       navigate('/dashboard');
     } catch (error: any) {
       console.error('Error saving mentor profile:', error.message);
-      toast.error('Failed to save profile data');
+      toast.error(error.message || 'Failed to save profile');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
+
+  if (isLoading && !profileData) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <NavBar />
+        <div className="container-custom flex-grow flex items-center justify-center">
+          <div className="flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin mr-2" />
+            <p>Loading profile...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
       <NavBar />
       <div className="container-custom flex-grow my-8">
-        <h1 className="text-3xl font-bold mb-6">
-          {existingData ? 'Update Your Mentor Profile' : 'Create Your Mentor Profile'}
-        </h1>
-        
-        <div className="bg-white p-6 rounded-lg shadow-md">
+        <div className="max-w-3xl mx-auto">
+          <h1 className="text-3xl font-bold mb-6">Your Mentor Profile</h1>
+          <p className="text-gray-600 mb-8">
+            Complete your profile to help mentees understand your expertise and how you can help them.
+          </p>
+
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* Profile Image Upload */}
-              <div className="flex flex-col items-center sm:flex-row sm:items-start gap-6 mb-6">
-                <div className="flex flex-col items-center">
-                  <Avatar className="h-24 w-24 mb-2">
-                    {imagePreview ? (
-                      <AvatarImage src={imagePreview} alt="Profile preview" />
-                    ) : (
-                      <AvatarFallback className="text-lg">
-                        {form.getValues().name?.[0]?.toUpperCase() || 'M'}
-                      </AvatarFallback>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              <div className="grid md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Your full name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="jobTitle"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Job Title</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. Senior Software Engineer" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="industry"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Industry</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. Technology, Finance" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="yearsExperience"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Years of Experience</FormLabel>
+                      <FormControl>
+                        <Input type="number" min="0" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="hourlyRate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Hourly Rate (USD)</FormLabel>
+                      <FormControl>
+                        <Input type="number" min="0" step="0.01" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="md:col-span-2">
+                  <FormField
+                    control={form.control}
+                    name="bio"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Bio</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Tell mentees about your background, expertise, and how you can help them..." 
+                            className="min-h-[120px]" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )}
-                  </Avatar>
-                  
-                  <label htmlFor="profile-image" className="cursor-pointer flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800">
-                    <ImageIcon className="h-4 w-4" />
-                    {imagePreview ? 'Change Image' : 'Upload Image'}
-                  </label>
-                  <input 
-                    id="profile-image" 
-                    type="file" 
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="hidden"
                   />
                 </div>
-                
-                <div className="flex-1">
-                  <h2 className="text-xl font-semibold mb-2">Personal Information</h2>
-                  <p className="text-gray-600 text-sm mb-4">
-                    This information will be visible to potential mentees looking for guidance.
-                  </p>
+
+                <div className="md:col-span-2">
+                  <FormLabel className="block mb-2">Profile Picture</FormLabel>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mt-2">
+                    {imagePreview && (
+                      <div className="relative w-24 h-24 overflow-hidden rounded-full border border-gray-200">
+                        <img 
+                          src={imagePreview} 
+                          alt="Profile preview" 
+                          className="w-full h-full object-cover" 
+                        />
+                      </div>
+                    )}
+                    <div className="flex-grow">
+                      <div className="relative">
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          className="w-full flex items-center justify-center gap-2"
+                          onClick={() => document.getElementById('profile-image')?.click()}
+                          disabled={isUploading}
+                        >
+                          {isUploading ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                              Uploading...
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="h-4 w-4 mr-2" />
+                              {imagePreview ? 'Change Image' : 'Upload Image'}
+                            </>
+                          )}
+                        </Button>
+                        <input
+                          type="file"
+                          id="profile-image"
+                          accept="image/png, image/jpeg, image/jpg"
+                          onChange={handleImageChange}
+                          className="hidden"
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Max 5MB. JPG, JPEG, or PNG.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
-              
-              {/* Name */}
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2">
-                      <User className="h-4 w-4" /> Full Name
-                    </FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter your full name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Job Title */}
-              <FormField
-                control={form.control}
-                name="jobTitle"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2">
-                      <Briefcase className="h-4 w-4" /> Job Title
-                    </FormLabel>
-                    <FormControl>
-                      <Input placeholder="E.g. Senior Software Engineer" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Industry */}
-              <FormField
-                control={form.control}
-                name="industry"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2">
-                      <Building className="h-4 w-4" /> Industry
-                    </FormLabel>
-                    <FormControl>
-                      <Input placeholder="E.g. Technology, Healthcare, Finance" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Years of Experience */}
-              <FormField
-                control={form.control}
-                name="yearsExperience"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4" /> Years of Experience
-                    </FormLabel>
-                    <FormControl>
-                      <Input type="number" min="0" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Hourly Rate */}
-              <FormField
-                control={form.control}
-                name="hourlyRate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" /> Hourly Rate (USD)
-                    </FormLabel>
-                    <FormControl>
-                      <Input type="number" min="0" step="0.01" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Bio */}
-              <FormField
-                control={form.control}
-                name="bio"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2">
-                      <FileText className="h-4 w-4" /> Biography
-                    </FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Tell potential mentees about your experience, expertise, and mentoring style..." 
-                        className="min-h-[150px]" 
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <Button type="submit" disabled={loading} className="w-full sm:w-auto flex items-center gap-2">
-                <Save className="h-4 w-4" />
-                {loading ? 'Saving...' : 'Save Profile'}
-              </Button>
+
+              <div className="flex justify-end gap-4 pt-4">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => navigate('/dashboard')}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={isLoading || isUploading}
+                  className="bg-pathwaiz-blue"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Profile'
+                  )}
+                </Button>
+              </div>
             </form>
           </Form>
         </div>
