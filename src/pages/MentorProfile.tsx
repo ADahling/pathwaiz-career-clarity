@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/sonner';
+import { toast } from '@/components/ui/use-toast';
 import NavBar from '@/components/NavBar';
 import { Loader2, Upload } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
@@ -55,7 +55,11 @@ const MentorProfile: React.FC = () => {
 
   useEffect(() => {
     if (userRole !== 'mentor') {
-      toast.error('You are not authorized to view this page');
+      toast({
+        title: "Unauthorized",
+        description: "You are not authorized to view this page",
+        variant: "destructive"
+      });
       navigate('/');
       return;
     }
@@ -95,7 +99,11 @@ const MentorProfile: React.FC = () => {
         }
       } catch (error: any) {
         console.error('Error fetching mentor profile:', error.message);
-        toast.error('Failed to load profile data');
+        toast({
+          title: "Error",
+          description: "Failed to load profile data",
+          variant: "destructive"
+        });
       } finally {
         setIsLoading(false);
       }
@@ -109,13 +117,21 @@ const MentorProfile: React.FC = () => {
       const file = e.target.files[0];
       // Check file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image size should not exceed 5MB');
+        toast({
+          title: "Error",
+          description: "Image size should not exceed 5MB",
+          variant: "destructive"
+        });
         return;
       }
       
       // Check file type
       if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
-        toast.error('Only JPEG, JPG and PNG formats are supported');
+        toast({
+          title: "Error",
+          description: "Only JPEG, JPG and PNG formats are supported",
+          variant: "destructive"
+        });
         return;
       }
       
@@ -147,7 +163,11 @@ const MentorProfile: React.FC = () => {
       return data.publicUrl;
     } catch (error: any) {
       console.error('Error uploading image:', error.message);
-      toast.error('Failed to upload image');
+      toast({
+        title: "Error",
+        description: "Failed to upload image",
+        variant: "destructive"
+      });
       return null;
     } finally {
       setIsUploading(false);
@@ -156,7 +176,11 @@ const MentorProfile: React.FC = () => {
 
   const onSubmit = async (values: z.infer<typeof mentorProfileSchema>) => {
     if (!user) {
-      toast.error('You must be logged in to update your profile');
+      toast({
+        title: "Error",
+        description: "You must be logged in to update your profile",
+        variant: "destructive"
+      });
       return;
     }
 
@@ -188,11 +212,18 @@ const MentorProfile: React.FC = () => {
 
       if (error) throw error;
 
-      toast.success('Profile saved successfully');
+      toast({
+        title: "Success",
+        description: "Profile saved successfully"
+      });
       navigate('/dashboard');
     } catch (error: any) {
       console.error('Error saving mentor profile:', error.message);
-      toast.error(error.message || 'Failed to save profile');
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save profile",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -375,7 +406,6 @@ const MentorProfile: React.FC = () => {
                 <Button 
                   type="submit" 
                   disabled={isLoading || isUploading}
-                  className="bg-pathwaiz-blue"
                 >
                   {isLoading ? (
                     <>
