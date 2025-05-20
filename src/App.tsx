@@ -75,3 +75,5 @@ const App = () => (
 );
 
 export default App;
+
+import '@/styles/navbar-animations.css';
