@@ -26,13 +26,6 @@ import Contact from "./pages/Contact";
 
 const queryClient = new QueryClient();
 
-// Helper to wrap routes that need the Layout
-const WithLayout = ({ Component }: { Component: React.ComponentType }) => (
-  <Layout>
-    <Component />
-  </Layout>
-);
-
 const App = () => (
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
@@ -42,7 +35,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <Routes>
-              <Route path="/" element={<Index />} />
+              <Route path="/" element={<Layout><Index /></Layout>} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/product" element={<Layout><Product /></Layout>} />
               <Route path="/how-it-works" element={<Layout><HowItWorksPage /></Layout>} />
