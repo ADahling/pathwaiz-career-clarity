@@ -40,6 +40,9 @@ const NavBar: React.FC = () => {
           <Link to="/become-a-mentor" className="text-black hover:text-pathwaiz-blue transition-colors">
             Become a Mentor
           </Link>
+          <Link to="/pricing" className="text-black hover:text-pathwaiz-blue transition-colors">
+            Pricing
+          </Link>
           <Link to="/#who-its-for" className="text-black hover:text-pathwaiz-blue transition-colors">
             Who It's For
           </Link>
@@ -128,6 +131,13 @@ const NavBar: React.FC = () => {
               onClick={() => setIsMenuOpen(false)}
             >
               Become a Mentor
+            </Link>
+            <Link 
+              to="/pricing" 
+              className="text-black hover:text-pathwaiz-blue transition-colors py-2"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Pricing
             </Link>
             <Link 
               to="/#who-its-for" 
