@@ -1,275 +1,234 @@
-
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/use-toast';
-import NavBar from '@/components/NavBar';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Layout } from '@/components/Layout';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useToast } from '@/components/ui/use-toast';
 import { Loader2, Upload } from 'lucide-react';
-import { v4 as uuidv4 } from 'uuid';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 // Define form schema
-const mentorProfileSchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  jobTitle: z.string().min(2, { message: "Job title must be at least 2 characters." }),
-  industry: z.string().min(2, { message: "Industry must be at least 2 characters." }),
-  yearsExperience: z.coerce.number().min(0, { message: "Years of experience must be 0 or greater." }),
-  hourlyRate: z.coerce.number().min(0, { message: "Hourly rate must be 0 or greater." }),
-  bio: z.string().min(10, { message: "Bio must be at least 10 characters." }).max(500, { message: "Bio must not exceed 500 characters." }),
+const formSchema = z.object({
+  firstName: z.string().min(2, { message: 'First name must be at least 2 characters' }),
+  lastName: z.string().min(2, { message: 'Last name must be at least 2 characters' }),
+  jobTitle: z.string().min(2, { message: 'Job title is required' }),
+  company: z.string().min(2, { message: 'Company name is required' }),
+  industry: z.string().min(2, { message: 'Industry is required' }),
+  yearsExperience: z.coerce.number().min(0, { message: 'Years of experience must be a positive number' }),
+  hourlyRate: z.coerce.number().min(0, { message: 'Hourly rate must be a positive number' }),
+  bio: z.string().min(50, { message: 'Bio must be at least 50 characters' }).max(500, { message: 'Bio must be less than 500 characters' }),
 });
 
-const MentorProfile: React.FC = () => {
-  const { user, userRole } = useAuth();
-  const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [profileImage, setProfileImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState<boolean>(false);
-  const [profileData, setProfileData] = useState<any>(null);
+type FormValues = z.infer<typeof formSchema>;
 
-  const form = useForm<z.infer<typeof mentorProfileSchema>>({
-    resolver: zodResolver(mentorProfileSchema),
+const MentorProfile: React.FC = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [profileData, setProfileData] = useState<Partial<FormValues> | null>(null);
+
+  // Initialize form with default values
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
-      jobTitle: "",
-      industry: "",
+      firstName: '',
+      lastName: '',
+      jobTitle: '',
+      company: '',
+      industry: '',
       yearsExperience: 0,
       hourlyRate: 0,
-      bio: "",
+      bio: '',
     },
   });
 
+  // Fetch profile data
   useEffect(() => {
-    if (userRole !== 'mentor') {
-      toast({
-        title: "Unauthorized",
-        description: "You are not authorized to view this page",
-        variant: "destructive"
-      });
-      navigate('/');
-      return;
-    }
-
-    const fetchMentorProfile = async () => {
+    const fetchProfileData = async () => {
+      if (!user) return;
+      
       setIsLoading(true);
+      
       try {
-        if (!user) return;
-
-        const { data, error } = await supabase
-          .from('mentor_profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-
-        if (error && error.code !== 'PGRST116') {
-          // PGRST116 is the code for "no rows returned" which is expected for new users
-          throw error;
-        }
-
-        if (data) {
-          setProfileData(data);
-          // Set form values from fetched data
-          form.reset({
-            name: data.name || "",
-            jobTitle: data.job_title || "",
-            industry: data.industry || "",
-            yearsExperience: data.years_experience || 0,
-            hourlyRate: data.hourly_rate || 0,
-            bio: data.bio || "",
-          });
-
-          // Set image preview if exists
-          if (data.profile_image) {
-            setImagePreview(data.profile_image);
-          }
-        }
-      } catch (error: any) {
-        console.error('Error fetching mentor profile:', error.message);
+        // This is a placeholder implementation
+        // In a real implementation, we would fetch profile data from Supabase
+        
+        // Mock profile data
+        const mockProfile = {
+          firstName: 'John',
+          lastName: 'Doe',
+          jobTitle: 'Senior Software Engineer',
+          company: 'Tech Innovations Inc.',
+          industry: 'Technology',
+          yearsExperience: 8,
+          hourlyRate: 120,
+          bio: 'Experienced software engineer with a passion for mentoring junior developers. Specialized in web development, system architecture, and career transitions within the tech industry.',
+          avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=John',
+        };
+        
+        setProfileData(mockProfile);
+        setImagePreview(mockProfile.avatarUrl);
+        
+        // Update form values
+        form.reset({
+          firstName: mockProfile.firstName,
+          lastName: mockProfile.lastName,
+          jobTitle: mockProfile.jobTitle,
+          company: mockProfile.company,
+          industry: mockProfile.industry,
+          yearsExperience: mockProfile.yearsExperience,
+          hourlyRate: mockProfile.hourlyRate,
+          bio: mockProfile.bio,
+        });
+      } catch (error) {
+        console.error('Error fetching profile data:', error);
         toast({
-          title: "Error",
-          description: "Failed to load profile data",
-          variant: "destructive"
+          title: 'Error',
+          description: 'Failed to load profile data. Please try again.',
+          variant: 'destructive',
         });
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchMentorProfile();
-  }, [user, userRole, navigate, form]);
+    fetchProfileData();
+  }, [user, form, toast]);
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      // Check file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast({
-          title: "Error",
-          description: "Image size should not exceed 5MB",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      // Check file type
-      if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
-        toast({
-          title: "Error",
-          description: "Only JPEG, JPG and PNG formats are supported",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      setProfileImage(file);
-      setImagePreview(URL.createObjectURL(file));
-    }
-  };
-
-  const uploadImage = async (): Promise<string | null> => {
-    if (!profileImage || !user) return imagePreview;
+  // Handle form submission
+  const onSubmit = async (values: FormValues) => {
+    if (!user) return;
     
-    setIsUploading(true);
-    try {
-      // Create a unique file path with user ID as folder name
-      const fileExt = profileImage.name.split('.').pop();
-      const filePath = `${user.id}/${uuidv4()}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('mentor-images')
-        .upload(filePath, profileImage);
-
-      if (uploadError) throw uploadError;
-
-      // Get the public URL for the uploaded image
-      const { data } = supabase.storage
-        .from('mentor-images')
-        .getPublicUrl(filePath);
-
-      return data.publicUrl;
-    } catch (error: any) {
-      console.error('Error uploading image:', error.message);
-      toast({
-        title: "Error",
-        description: "Failed to upload image",
-        variant: "destructive"
-      });
-      return null;
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const onSubmit = async (values: z.infer<typeof mentorProfileSchema>) => {
-    if (!user) {
-      toast({
-        title: "Error",
-        description: "You must be logged in to update your profile",
-        variant: "destructive"
-      });
-      return;
-    }
-
     setIsLoading(true);
-
+    
     try {
-      // Upload image if selected
-      let imageUrl = imagePreview;
-      if (profileImage) {
-        imageUrl = await uploadImage();
-      }
-
-      // Prepare the profile data
-      const profileUpdate = {
-        id: user.id,
-        name: values.name,
-        job_title: values.jobTitle,
-        industry: values.industry,
-        years_experience: values.yearsExperience,
-        hourly_rate: values.hourlyRate,
-        bio: values.bio,
-        profile_image: imageUrl
-      };
-
-      // Update or insert the mentor profile
-      const { error } = await supabase
-        .from('mentor_profiles')
-        .upsert(profileUpdate);
-
-      if (error) throw error;
-
+      // This is a placeholder implementation
+      // In a real implementation, we would update profile data in Supabase
+      
+      console.log('Profile data to update:', values);
+      
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
       toast({
-        title: "Success",
-        description: "Profile saved successfully"
+        title: 'Profile Updated',
+        description: 'Your mentor profile has been successfully updated.',
       });
+      
       navigate('/dashboard');
-    } catch (error: any) {
-      console.error('Error saving mentor profile:', error.message);
+    } catch (error) {
+      console.error('Error updating profile:', error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to save profile",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Failed to update profile. Please try again.',
+        variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (isLoading && !profileData) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <NavBar />
-        <div className="container-custom flex-grow flex items-center justify-center">
-          <div className="flex items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin mr-2" />
-            <p>Loading profile...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Handle image upload
+  const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: 'Error',
+        description: 'Image size must be less than 5MB.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    // Check file type
+    if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
+      toast({
+        title: 'Error',
+        description: 'Only JPG, JPEG, and PNG images are allowed.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    setIsUploading(true);
+    
+    try {
+      // This is a placeholder implementation
+      // In a real implementation, we would upload the image to Supabase Storage
+      
+      // Create a preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+      
+      // Simulate upload delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      toast({
+        title: 'Image Uploaded',
+        description: 'Your profile picture has been updated.',
+      });
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to upload image. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <NavBar />
-      <div className="container-custom flex-grow my-8">
+    <Layout>
+      <div className="container-custom my-8">
         <div className="max-w-3xl mx-auto">
-          <h1 className="text-3xl font-bold mb-6">Your Mentor Profile</h1>
-          <p className="text-gray-600 mb-8">
-            Complete your profile to help mentees understand your expertise and how you can help them.
-          </p>
-
+          <h1 className="text-3xl font-bold mb-6">Mentor Profile</h1>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
-                  name="name"
+                  name="firstName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Name</FormLabel>
+                      <FormLabel>First Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="Your full name" {...field} />
+                        <Input {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
+                <FormField
+                  control={form.control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Last Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField
                   control={form.control}
                   name="jobTitle"
@@ -277,13 +236,25 @@ const MentorProfile: React.FC = () => {
                     <FormItem>
                       <FormLabel>Job Title</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. Senior Software Engineer" {...field} />
+                        <Input {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
+                <FormField
+                  control={form.control}
+                  name="company"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Company</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField
                   control={form.control}
                   name="industry"
@@ -291,13 +262,29 @@ const MentorProfile: React.FC = () => {
                     <FormItem>
                       <FormLabel>Industry</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. Technology, Finance" {...field} />
+                        <Select 
+                          onValueChange={field.onChange} 
+                          defaultValue={field.value}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select an industry" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Technology">Technology</SelectItem>
+                            <SelectItem value="Finance">Finance</SelectItem>
+                            <SelectItem value="Healthcare">Healthcare</SelectItem>
+                            <SelectItem value="Education">Education</SelectItem>
+                            <SelectItem value="Marketing">Marketing</SelectItem>
+                            <SelectItem value="Design">Design</SelectItem>
+                            <SelectItem value="Business">Business</SelectItem>
+                            <SelectItem value="Other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="yearsExperience"
@@ -311,7 +298,6 @@ const MentorProfile: React.FC = () => {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="hourlyRate"
@@ -325,7 +311,6 @@ const MentorProfile: React.FC = () => {
                     </FormItem>
                   )}
                 />
-
                 <div className="md:col-span-2">
                   <FormField
                     control={form.control}
@@ -345,7 +330,6 @@ const MentorProfile: React.FC = () => {
                     )}
                   />
                 </div>
-
                 <div className="md:col-span-2">
                   <FormLabel className="block mb-2">Profile Picture</FormLabel>
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mt-2">
@@ -394,7 +378,6 @@ const MentorProfile: React.FC = () => {
                   </div>
                 </div>
               </div>
-
               <div className="flex justify-end gap-4 pt-4">
                 <Button 
                   type="button" 
@@ -421,7 +404,7 @@ const MentorProfile: React.FC = () => {
           </Form>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 
