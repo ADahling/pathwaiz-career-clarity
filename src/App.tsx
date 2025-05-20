@@ -20,6 +20,7 @@ import FindAMentor from "./pages/FindAMentor";
 import BecomeAMentor from "./pages/BecomeAMentor";
 import Pricing from "./pages/Pricing";
 import AboutUs from "./pages/AboutUs";
+import Careers from "./pages/Careers";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ const App = () => (
               <Route path="/become-a-mentor" element={<BecomeAMentor />} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/about-us" element={<AboutUs />} />
+              <Route path="/careers" element={<Careers />} />
               <Route path="/onboarding" element={
                 <ProtectedRoute>
                   <Onboarding />
