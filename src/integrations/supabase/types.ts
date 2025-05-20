@@ -1,286 +1,246 @@
-// Pathwaiz Career Clarity - Supabase Types
-// This file defines TypeScript types for the database schema
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
-export type Profile = {
-  id: string;
-  created_at: string;
-  updated_at: string;
-  email: string;
-  first_name: string | null;
-  last_name: string | null;
-  avatar_url: string | null;
-  role: 'mentee' | 'mentor' | 'admin' | null;
-  bio: string | null;
-  location: string | null;
-  timezone: string | null;
-  is_verified: boolean;
-  is_active: boolean;
-};
-
-export type Mentor = {
-  id: string;
-  created_at: string;
-  updated_at: string;
-  job_title: string | null;
-  company: string | null;
-  industry: string | null;
-  years_experience: number | null;
-  hourly_rate: number | null;
-  expertise: string[] | null;
-  education: string | null;
-  linkedin_url: string | null;
-  website_url: string | null;
-  average_rating: number | null;
-  total_reviews: number;
-  total_sessions: number;
-};
-
-export type Mentee = {
-  id: string;
-  created_at: string;
-  updated_at: string;
-  career_goals: string | null;
-  interests: string[] | null;
-  current_role: string | null;
-  education: string | null;
-  preferred_industries: string[] | null;
-};
-
-export type Category = {
-  id: string;
-  created_at: string;
-  name: string;
-  description: string | null;
-  icon: string | null;
-  is_active: boolean;
-};
-
-export type MentorCategory = {
-  id: string;
-  mentor_id: string;
-  category_id: string;
-  created_at: string;
-};
-
-export type Availability = {
-  id: string;
-  mentor_id: string;
-  day_of_week: number; // 0-6, Sunday to Saturday
-  start_time: string; // HH:MM:SS
-  end_time: string; // HH:MM:SS
-  is_recurring: boolean;
-  created_at: string;
-  updated_at: string;
-};
-
-export type AvailabilityException = {
-  id: string;
-  mentor_id: string;
-  exception_date: string; // YYYY-MM-DD
-  is_available: boolean;
-  start_time: string | null; // HH:MM:SS
-  end_time: string | null; // HH:MM:SS
-  created_at: string;
-  updated_at: string;
-};
-
-export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no-show';
-
-export type Booking = {
-  id: string;
-  mentor_id: string;
-  mentee_id: string;
-  start_time: string;
-  end_time: string;
-  duration: number; // in minutes
-  status: BookingStatus;
-  cancellation_reason: string | null;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-};
-
-export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded';
-
-export type Payment = {
-  id: string;
-  booking_id: string;
-  amount: number;
-  currency: string;
-  status: PaymentStatus;
-  stripe_payment_intent_id: string | null; // Placeholder for Stripe integration
-  platform_fee: number;
-  mentor_payout: number;
-  payment_method: string | null;
-  receipt_url: string | null;
-  created_at: string;
-  updated_at: string;
-};
-
-export type Message = {
-  id: string;
-  sender_id: string;
-  recipient_id: string;
-  booking_id: string | null;
-  content: string;
-  is_read: boolean;
-  created_at: string;
-  updated_at: string;
-};
-
-export type Conversation = {
-  id: string;
-  mentor_id: string;
-  mentee_id: string;
-  last_message_at: string;
-  created_at: string;
-  updated_at: string;
-};
-
-export type Review = {
-  id: string;
-  booking_id: string;
-  mentor_id: string;
-  mentee_id: string;
-  rating: number; // 1-5
-  content: string | null;
-  is_public: boolean;
-  helpful_count: number;
-  created_at: string;
-  updated_at: string;
-};
-
-export type VideoSessionStatus = 'pending' | 'active' | 'completed' | 'failed';
-
-export type VideoSession = {
-  id: string;
-  booking_id: string;
-  room_id: string;
-  room_name: string;
-  status: VideoSessionStatus;
-  start_time: string | null;
-  end_time: string | null;
-  duration: number | null; // in seconds
-  recording_url: string | null;
-  created_at: string;
-  updated_at: string;
-};
-
-export type NotificationType = 
-  | 'booking_created' 
-  | 'booking_confirmed' 
-  | 'booking_cancelled' 
-  | 'payment_completed' 
-  | 'message_received' 
-  | 'session_reminder' 
-  | 'review_received';
-
-export type Notification = {
-  id: string;
-  user_id: string;
-  type: NotificationType;
-  title: string;
-  content: string;
-  is_read: boolean;
-  related_id: string | null;
-  created_at: string;
-};
-
-// Combined user type with profile and role-specific data
-export type UserWithProfile = Profile & {
-  mentor?: Mentor;
-  mentee?: Mentee;
-};
-
-// Extended mentor type with categories
-export type MentorWithDetails = Mentor & {
-  profile: Profile;
-  categories: Category[];
-  availability?: Availability[];
-};
-
-// Extended booking type with related entities
-export type BookingWithDetails = Booking & {
-  mentor: MentorWithDetails;
-  mentee: Profile & { mentee: Mentee };
-  payment?: Payment;
-  video_session?: VideoSession;
-};
-
-// Database definitions
-export interface Database {
+export type Database = {
   public: {
     Tables: {
+      mentee_profiles: {
+        Row: {
+          career_goals: string | null
+          career_interests: string[] | null
+          created_at: string | null
+          id: string
+          name: string | null
+          profile_image: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          career_goals?: string | null
+          career_interests?: string[] | null
+          created_at?: string | null
+          id: string
+          name?: string | null
+          profile_image?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          career_goals?: string | null
+          career_interests?: string[] | null
+          created_at?: string | null
+          id?: string
+          name?: string | null
+          profile_image?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentee_profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mentor_profiles: {
+        Row: {
+          bio: string | null
+          created_at: string | null
+          hourly_rate: number | null
+          id: string
+          industry: string | null
+          job_title: string | null
+          name: string | null
+          profile_image: string | null
+          updated_at: string | null
+          years_experience: number | null
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string | null
+          hourly_rate?: number | null
+          id: string
+          industry?: string | null
+          job_title?: string | null
+          name?: string | null
+          profile_image?: string | null
+          updated_at?: string | null
+          years_experience?: number | null
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string | null
+          hourly_rate?: number | null
+          id?: string
+          industry?: string | null
+          job_title?: string | null
+          name?: string | null
+          profile_image?: string | null
+          updated_at?: string | null
+          years_experience?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentor_profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
-        Row: Profile;
-        Insert: Omit<Profile, 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<Profile, 'created_at' | 'updated_at'>>;
-      };
-      mentors: {
-        Row: Mentor;
-        Insert: Omit<Mentor, 'created_at' | 'updated_at' | 'average_rating' | 'total_reviews' | 'total_sessions'>;
-        Update: Partial<Omit<Mentor, 'created_at' | 'updated_at' | 'average_rating' | 'total_reviews' | 'total_sessions'>>;
-      };
-      mentees: {
-        Row: Mentee;
-        Insert: Omit<Mentee, 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<Mentee, 'created_at' | 'updated_at'>>;
-      };
-      categories: {
-        Row: Category;
-        Insert: Omit<Category, 'created_at'>;
-        Update: Partial<Omit<Category, 'created_at'>>;
-      };
-      mentor_categories: {
-        Row: MentorCategory;
-        Insert: Omit<MentorCategory, 'id' | 'created_at'>;
-        Update: Partial<Omit<MentorCategory, 'id' | 'created_at'>>;
-      };
-      availability: {
-        Row: Availability;
-        Insert: Omit<Availability, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<Availability, 'id' | 'created_at' | 'updated_at'>>;
-      };
-      availability_exceptions: {
-        Row: AvailabilityException;
-        Insert: Omit<AvailabilityException, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<AvailabilityException, 'id' | 'created_at' | 'updated_at'>>;
-      };
-      bookings: {
-        Row: Booking;
-        Insert: Omit<Booking, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<Booking, 'id' | 'created_at' | 'updated_at'>>;
-      };
-      payments: {
-        Row: Payment;
-        Insert: Omit<Payment, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<Payment, 'id' | 'created_at' | 'updated_at'>>;
-      };
-      messages: {
-        Row: Message;
-        Insert: Omit<Message, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<Message, 'id' | 'created_at' | 'updated_at'>>;
-      };
-      conversations: {
-        Row: Conversation;
-        Insert: Omit<Conversation, 'id' | 'created_at' | 'updated_at' | 'last_message_at'>;
-        Update: Partial<Omit<Conversation, 'id' | 'created_at' | 'updated_at'>>;
-      };
-      reviews: {
-        Row: Review;
-        Insert: Omit<Review, 'id' | 'created_at' | 'updated_at' | 'helpful_count'>;
-        Update: Partial<Omit<Review, 'id' | 'created_at' | 'updated_at'>>;
-      };
-      video_sessions: {
-        Row: VideoSession;
-        Insert: Omit<VideoSession, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<VideoSession, 'id' | 'created_at' | 'updated_at'>>;
-      };
-      notifications: {
-        Row: Notification;
-        Insert: Omit<Notification, 'id' | 'created_at'>;
-        Update: Partial<Omit<Notification, 'id' | 'created_at'>>;
-      };
-    };
-  };
+        Row: {
+          created_at: string | null
+          id: string
+          role: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id: string
+          role?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      get_user_role: {
+        Args: { uid: string }
+        Returns: string
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
 }
+
+type DefaultSchema = Database[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof Database },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof Database },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof Database },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof Database },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof Database },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const
