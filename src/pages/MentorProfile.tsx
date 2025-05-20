@@ -1,410 +1,353 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Layout } from '@/components/Layout';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useToast } from '@/components/ui/use-toast';
-import { Loader2, Upload } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { useParams } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../integrations/supabase/client';
+import { StarRating } from '../components/reviews/StarRating';
+import { ReviewList } from '../components/reviews/ReviewList';
+import { BookingForm } from '../components/booking/BookingForm';
+import { AvailabilityCalendar } from '../components/booking/AvailabilityCalendar';
 
-// Define form schema
-const formSchema = z.object({
-  firstName: z.string().min(2, { message: 'First name must be at least 2 characters' }),
-  lastName: z.string().min(2, { message: 'Last name must be at least 2 characters' }),
-  jobTitle: z.string().min(2, { message: 'Job title is required' }),
-  company: z.string().min(2, { message: 'Company name is required' }),
-  industry: z.string().min(2, { message: 'Industry is required' }),
-  yearsExperience: z.coerce.number().min(0, { message: 'Years of experience must be a positive number' }),
-  hourlyRate: z.coerce.number().min(0, { message: 'Hourly rate must be a positive number' }),
-  bio: z.string().min(50, { message: 'Bio must be at least 50 characters' }).max(500, { message: 'Bio must be less than 500 characters' }),
-});
+// Premium styling imports
+import '../styles/premium-design-system.css';
 
-type FormValues = z.infer<typeof formSchema>;
-
-const MentorProfile: React.FC = () => {
+const MentorProfile = () => {
+  const { id } = useParams();
   const { user } = useAuth();
-  const { toast } = useToast();
-  const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [profileData, setProfileData] = useState<Partial<FormValues> | null>(null);
+  const [mentor, setMentor] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('about');
+  const [showBookingModal, setShowBookingModal] = useState(false);
 
-  // Initialize form with default values
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      firstName: '',
-      lastName: '',
-      jobTitle: '',
-      company: '',
-      industry: '',
-      yearsExperience: 0,
-      hourlyRate: 0,
-      bio: '',
-    },
-  });
-
-  // Fetch profile data
   useEffect(() => {
-    const fetchProfileData = async () => {
-      if (!user) return;
-      
-      setIsLoading(true);
-      
+    const fetchMentor = async () => {
       try {
-        // This is a placeholder implementation
-        // In a real implementation, we would fetch profile data from Supabase
-        
-        // Mock profile data
-        const mockProfile = {
-          firstName: 'John',
-          lastName: 'Doe',
-          jobTitle: 'Senior Software Engineer',
-          company: 'Tech Innovations Inc.',
-          industry: 'Technology',
-          yearsExperience: 8,
-          hourlyRate: 120,
-          bio: 'Experienced software engineer with a passion for mentoring junior developers. Specialized in web development, system architecture, and career transitions within the tech industry.',
-          avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=John',
-        };
-        
-        setProfileData(mockProfile);
-        setImagePreview(mockProfile.avatarUrl);
-        
-        // Update form values
-        form.reset({
-          firstName: mockProfile.firstName,
-          lastName: mockProfile.lastName,
-          jobTitle: mockProfile.jobTitle,
-          company: mockProfile.company,
-          industry: mockProfile.industry,
-          yearsExperience: mockProfile.yearsExperience,
-          hourlyRate: mockProfile.hourlyRate,
-          bio: mockProfile.bio,
-        });
+        setLoading(true);
+        // Placeholder for actual API call
+        const { data, error } = await supabase
+          .from('mentors')
+          .select('*, profiles(*), reviews(*)')
+          .eq('id', id)
+          .single();
+
+        if (error) throw error;
+
+        // If no data from API, use placeholder data
+        if (!data) {
+          setMentor({
+            id: id,
+            name: 'Alex Johnson',
+            title: 'Senior Product Manager',
+            company: 'Tech Innovations Inc.',
+            bio: 'Experienced product leader with 10+ years in tech. Passionate about mentoring the next generation of product managers and helping them navigate their career paths.',
+            expertise: ['Product Strategy', 'Career Transitions', 'Leadership', 'UX Design'],
+            hourlyRate: 75,
+            rating: 4.8,
+            reviewCount: 24,
+            availability: [
+              { day: 'Monday', slots: ['10:00 AM', '2:00 PM', '4:00 PM'] },
+              { day: 'Wednesday', slots: ['11:00 AM', '3:00 PM'] },
+              { day: 'Friday', slots: ['9:00 AM', '1:00 PM', '5:00 PM'] }
+            ],
+            profileImage: 'https://randomuser.me/api/portraits/men/32.jpg',
+            categories: ['Career Development', 'Leadership', 'Product Management'],
+            education: [
+              { institution: 'Stanford University', degree: 'MBA', year: '2015' },
+              { institution: 'University of California', degree: 'BS Computer Science', year: '2010' }
+            ],
+            experience: [
+              { 
+                company: 'Tech Innovations Inc.', 
+                role: 'Senior Product Manager', 
+                duration: '2018 - Present',
+                description: 'Leading product strategy and development for enterprise SaaS solutions.'
+              },
+              { 
+                company: 'StartupXYZ', 
+                role: 'Product Manager', 
+                duration: '2015 - 2018',
+                description: 'Managed the development of mobile applications with over 1M downloads.'
+              }
+            ],
+            reviews: [
+              {
+                id: '1',
+                userId: 'user1',
+                userName: 'Sarah M.',
+                rating: 5,
+                date: '2023-04-15',
+                comment: 'Alex provided invaluable insights for my career transition into product management. Highly recommend!'
+              },
+              {
+                id: '2',
+                userId: 'user2',
+                userName: 'Michael T.',
+                rating: 4,
+                date: '2023-03-22',
+                comment: 'Great session focused on product strategy. Alex shared practical frameworks I could immediately apply.'
+              }
+            ]
+          });
+        } else {
+          setMentor(data);
+        }
       } catch (error) {
-        console.error('Error fetching profile data:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load profile data. Please try again.',
-          variant: 'destructive',
-        });
+        console.error('Error fetching mentor:', error);
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
 
-    fetchProfileData();
-  }, [user, form, toast]);
+    fetchMentor();
+  }, [id]);
 
-  // Handle form submission
-  const onSubmit = async (values: FormValues) => {
-    if (!user) return;
-    
-    setIsLoading(true);
-    
-    try {
-      // This is a placeholder implementation
-      // In a real implementation, we would update profile data in Supabase
-      
-      console.log('Profile data to update:', values);
-      
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      toast({
-        title: 'Profile Updated',
-        description: 'Your mentor profile has been successfully updated.',
-      });
-      
-      navigate('/dashboard');
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update profile. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="premium-loader">
+          <div className="spinner"></div>
+          <p className="mt-4 text-gray-600">Loading mentor profile...</p>
+        </div>
+      </div>
+    );
+  }
 
-  // Handle image upload
-  const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    
-    // Check file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: 'Error',
-        description: 'Image size must be less than 5MB.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    // Check file type
-    if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
-      toast({
-        title: 'Error',
-        description: 'Only JPG, JPEG, and PNG images are allowed.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    setIsUploading(true);
-    
-    try {
-      // This is a placeholder implementation
-      // In a real implementation, we would upload the image to Supabase Storage
-      
-      // Create a preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-      
-      // Simulate upload delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      toast({
-        title: 'Image Uploaded',
-        description: 'Your profile picture has been updated.',
-      });
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to upload image. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsUploading(false);
-    }
-  };
+  if (!mentor) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4">
+        <div className="premium-error-card">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-red-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Mentor Not Found</h2>
+          <p className="text-gray-600 mb-6">We couldn't find the mentor you're looking for. They may have removed their profile or the URL might be incorrect.</p>
+          <a href="/find-a-mentor" className="premium-button-primary">
+            Browse Mentors
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <Layout>
-      <div className="container-custom my-8">
-        <div className="max-w-3xl mx-auto">
-          <h1 className="text-3xl font-bold mb-6">Mentor Profile</h1>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="firstName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>First Name</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+      {/* Hero Section with Glassmorphism */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-blue-600 opacity-10 z-0"></div>
+        <div className="premium-container relative z-10 pt-12 pb-16 px-4 sm:px-6 lg:px-8">
+          <div className="premium-profile-header">
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-8">
+              <div className="premium-avatar-container">
+                <img 
+                  src={mentor.profileImage || 'https://randomuser.me/api/portraits/men/32.jpg'} 
+                  alt={mentor.name} 
+                  className="premium-avatar"
                 />
-                <FormField
-                  control={form.control}
-                  name="lastName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Last Name</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="jobTitle"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Job Title</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="company"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Company</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="industry"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Industry</FormLabel>
-                      <FormControl>
-                        <Select 
-                          onValueChange={field.onChange} 
-                          defaultValue={field.value}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select an industry" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Technology">Technology</SelectItem>
-                            <SelectItem value="Finance">Finance</SelectItem>
-                            <SelectItem value="Healthcare">Healthcare</SelectItem>
-                            <SelectItem value="Education">Education</SelectItem>
-                            <SelectItem value="Marketing">Marketing</SelectItem>
-                            <SelectItem value="Design">Design</SelectItem>
-                            <SelectItem value="Business">Business</SelectItem>
-                            <SelectItem value="Other">Other</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="yearsExperience"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Years of Experience</FormLabel>
-                      <FormControl>
-                        <Input type="number" min="0" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="hourlyRate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Hourly Rate (USD)</FormLabel>
-                      <FormControl>
-                        <Input type="number" min="0" step="0.01" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="md:col-span-2">
-                  <FormField
-                    control={form.control}
-                    name="bio"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Bio</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Tell mentees about your background, expertise, and how you can help them..." 
-                            className="min-h-[120px]" 
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <div className="premium-avatar-badge">
+                  <StarRating rating={mentor.rating || 4.8} size="sm" />
+                  <span className="text-sm font-medium ml-1">{mentor.reviewCount || 24} reviews</span>
                 </div>
-                <div className="md:col-span-2">
-                  <FormLabel className="block mb-2">Profile Picture</FormLabel>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mt-2">
-                    {imagePreview && (
-                      <div className="relative w-24 h-24 overflow-hidden rounded-full border border-gray-200">
-                        <img 
-                          src={imagePreview} 
-                          alt="Profile preview" 
-                          className="w-full h-full object-cover" 
-                        />
-                      </div>
-                    )}
-                    <div className="flex-grow">
-                      <div className="relative">
-                        <Button 
-                          type="button" 
-                          variant="outline" 
-                          className="w-full flex items-center justify-center gap-2"
-                          onClick={() => document.getElementById('profile-image')?.click()}
-                          disabled={isUploading}
-                        >
-                          {isUploading ? (
-                            <>
-                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                              Uploading...
-                            </>
-                          ) : (
-                            <>
-                              <Upload className="h-4 w-4 mr-2" />
-                              {imagePreview ? 'Change Image' : 'Upload Image'}
-                            </>
-                          )}
-                        </Button>
-                        <input
-                          type="file"
-                          id="profile-image"
-                          accept="image/png, image/jpeg, image/jpg"
-                          onChange={handleImageChange}
-                          className="hidden"
-                        />
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Max 5MB. JPG, JPEG, or PNG.
-                      </p>
+              </div>
+              
+              <div className="flex-1">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <h1 className="premium-heading-1 mb-2">{mentor.name}</h1>
+                    <p className="premium-subheading mb-3">{mentor.title} at {mentor.company}</p>
+                    
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {mentor.categories && mentor.categories.map((category, index) => (
+                        <span key={index} className="premium-badge">
+                          {category}
+                        </span>
+                      ))}
                     </div>
+                  </div>
+                  
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <button 
+                      onClick={() => setShowBookingModal(true)}
+                      className="premium-button-primary"
+                    >
+                      Book a Session
+                    </button>
+                    <button className="premium-button-secondary">
+                      Message
+                    </button>
                   </div>
                 </div>
               </div>
-              <div className="flex justify-end gap-4 pt-4">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => navigate('/dashboard')}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  type="submit" 
-                  disabled={isLoading || isUploading}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      Saving...
-                    </>
-                  ) : (
-                    'Save Profile'
-                  )}
-                </Button>
-              </div>
-            </form>
-          </Form>
+            </div>
+          </div>
         </div>
       </div>
-    </Layout>
+      
+      {/* Tab Navigation */}
+      <div className="premium-container px-4 sm:px-6 lg:px-8">
+        <div className="premium-tabs">
+          <button 
+            className={`premium-tab ${activeTab === 'about' ? 'active' : ''}`}
+            onClick={() => setActiveTab('about')}
+          >
+            About
+          </button>
+          <button 
+            className={`premium-tab ${activeTab === 'experience' ? 'active' : ''}`}
+            onClick={() => setActiveTab('experience')}
+          >
+            Experience
+          </button>
+          <button 
+            className={`premium-tab ${activeTab === 'reviews' ? 'active' : ''}`}
+            onClick={() => setActiveTab('reviews')}
+          >
+            Reviews
+          </button>
+          <button 
+            className={`premium-tab ${activeTab === 'availability' ? 'active' : ''}`}
+            onClick={() => setActiveTab('availability')}
+          >
+            Availability
+          </button>
+        </div>
+      </div>
+      
+      {/* Tab Content */}
+      <div className="premium-container px-4 sm:px-6 lg:px-8 pb-16">
+        <div className="premium-tab-content">
+          {activeTab === 'about' && (
+            <div className="premium-card">
+              <h2 className="premium-heading-2 mb-4">About Me</h2>
+              <p className="premium-text mb-8">{mentor.bio}</p>
+              
+              <h3 className="premium-heading-3 mb-3">Areas of Expertise</h3>
+              <div className="flex flex-wrap gap-2 mb-8">
+                {mentor.expertise && mentor.expertise.map((skill, index) => (
+                  <span key={index} className="premium-chip">
+                    {skill}
+                  </span>
+                ))}
+              </div>
+              
+              <div className="premium-divider my-8"></div>
+              
+              <h3 className="premium-heading-3 mb-3">Education</h3>
+              <div className="space-y-4 mb-8">
+                {mentor.education && mentor.education.map((edu, index) => (
+                  <div key={index} className="premium-list-item">
+                    <div className="premium-list-icon">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path d="M12 14l9-5-9-5-9 5 9 5z" />
+                        <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="premium-heading-4">{edu.institution}</h4>
+                      <p className="premium-text-sm">{edu.degree}, {edu.year}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <h3 className="premium-heading-3 mb-3">Session Rate</h3>
+              <div className="premium-pricing-card">
+                <div className="flex items-center">
+                  <span className="premium-price">${mentor.hourlyRate}</span>
+                  <span className="premium-text-sm ml-2">/ hour</span>
+                </div>
+                <button 
+                  onClick={() => setShowBookingModal(true)}
+                  className="premium-button-primary mt-4"
+                >
+                  Book a Session
+                </button>
+              </div>
+            </div>
+          )}
+          
+          {activeTab === 'experience' && (
+            <div className="premium-card">
+              <h2 className="premium-heading-2 mb-6">Professional Experience</h2>
+              
+              <div className="premium-timeline">
+                {mentor.experience && mentor.experience.map((exp, index) => (
+                  <div key={index} className="premium-timeline-item">
+                    <div className="premium-timeline-marker"></div>
+                    <div className="premium-timeline-content">
+                      <h3 className="premium-heading-3">{exp.role}</h3>
+                      <div className="flex items-center premium-text-sm text-gray-600 mb-2">
+                        <span>{exp.company}</span>
+                        <span className="mx-2">•</span>
+                        <span>{exp.duration}</span>
+                      </div>
+                      <p className="premium-text">{exp.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {activeTab === 'reviews' && (
+            <div className="premium-card">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="premium-heading-2">Reviews</h2>
+                <div className="flex items-center">
+                  <StarRating rating={mentor.rating || 4.8} size="md" />
+                  <span className="ml-2 premium-text-sm font-medium">{mentor.rating} ({mentor.reviewCount} reviews)</span>
+                </div>
+              </div>
+              
+              <ReviewList reviews={mentor.reviews} />
+            </div>
+          )}
+          
+          {activeTab === 'availability' && (
+            <div className="premium-card">
+              <h2 className="premium-heading-2 mb-6">Availability</h2>
+              <AvailabilityCalendar mentorId={mentor.id} availability={mentor.availability} />
+              
+              <div className="premium-info-card mt-8">
+                <div className="flex items-start">
+                  <div className="premium-info-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="premium-heading-4">Booking Information</h4>
+                    <p className="premium-text-sm mt-1">Sessions are 60 minutes by default. You can book up to 2 weeks in advance. Cancellations are free up to 24 hours before the scheduled time.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Booking Modal */}
+      {showBookingModal && (
+        <div className="premium-modal">
+          <div className="premium-modal-overlay" onClick={() => setShowBookingModal(false)}></div>
+          <div className="premium-modal-container">
+            <div className="premium-modal-header">
+              <h3 className="premium-heading-3">Book a Session with {mentor.name}</h3>
+              <button 
+                className="premium-modal-close"
+                onClick={() => setShowBookingModal(false)}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="premium-modal-body">
+              <BookingForm mentor={mentor} onClose={() => setShowBookingModal(false)} />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
