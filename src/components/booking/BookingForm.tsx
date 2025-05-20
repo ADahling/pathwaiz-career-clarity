@@ -1,274 +1,368 @@
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/components/ui/use-toast';
-import { Loader2, CreditCard, Calendar, Clock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-// Define the form schema
-const bookingFormSchema = z.object({
-  sessionDate: z.string().min(1, { message: 'Please select a session date' }),
-  sessionTime: z.string().min(1, { message: 'Please select a session time' }),
-  duration: z.string().min(1, { message: 'Please select a session duration' }),
-  topic: z.string().min(3, { message: 'Topic must be at least 3 characters' }).max(100),
-  notes: z.string().max(500, { message: 'Notes must be less than 500 characters' }).optional(),
-});
-
-type BookingFormValues = z.infer<typeof bookingFormSchema>;
+import { supabase } from '../../../integrations/supabase/client';
+import Calendar from '../calendar/Calendar';
+import { useAuth } from '../../../contexts/AuthContext';
+import './BookingForm.css';
 
 interface BookingFormProps {
-  mentorId: string;
-  mentorName: string;
-  hourlyRate: number;
-  selectedDate?: Date;
-  selectedTime?: string;
-  onSuccess?: () => void;
+  mentor: any;
+  onClose?: () => void;
 }
 
-const BookingForm: React.FC<BookingFormProps> = ({
-  mentorId,
-  mentorName,
-  hourlyRate,
-  selectedDate,
-  selectedTime,
-  onSuccess,
-}) => {
-  const { toast } = useToast();
+const BookingForm: React.FC<BookingFormProps> = ({ mentor, onClose }) => {
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const [step, setStep] = useState(1);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [sessionType, setSessionType] = useState('');
+  const [sessionTopic, setSessionTopic] = useState('');
+  const [additionalNotes, setAdditionalNotes] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
 
-  // Initialize form with default values
-  const form = useForm<BookingFormValues>({
-    resolver: zodResolver(bookingFormSchema),
-    defaultValues: {
-      sessionDate: selectedDate ? selectedDate.toISOString().split('T')[0] : '',
-      sessionTime: selectedTime || '',
-      duration: '60',
-      topic: '',
-      notes: '',
-    },
-  });
+  // Session types based on mentor's expertise
+  const sessionTypes = mentor?.expertise || [
+    'Career Guidance', 
+    'Resume Review', 
+    'Interview Preparation', 
+    'Skill Development',
+    'Industry Insights'
+  ];
 
-  // Calculate session cost based on duration and hourly rate
-  const calculateCost = (duration: string) => {
-    const durationInHours = parseInt(duration) / 60;
-    return (durationInHours * hourlyRate).toFixed(2);
+  useEffect(() => {
+    // Reset error when step changes
+    setError('');
+  }, [step]);
+
+  const handleTimeSelected = (date: Date, time: string) => {
+    setSelectedDate(date);
+    setSelectedTime(time);
   };
 
-  // Handle form submission
-  const onSubmit = async (values: BookingFormValues) => {
-    setIsSubmitting(true);
-    
+  const handleNextStep = () => {
+    if (step === 1) {
+      if (!selectedDate || !selectedTime) {
+        setError('Please select a date and time for your session');
+        return;
+      }
+    } else if (step === 2) {
+      if (!sessionType) {
+        setError('Please select a session type');
+        return;
+      }
+      if (!sessionTopic.trim()) {
+        setError('Please enter a topic for your session');
+        return;
+      }
+    }
+
+    setStep(prevStep => prevStep + 1);
+  };
+
+  const handlePrevStep = () => {
+    setStep(prevStep => prevStep - 1);
+  };
+
+  const handleSubmit = async () => {
+    if (!user) {
+      setError('You must be logged in to book a session');
+      return;
+    }
+
+    if (!selectedDate || !selectedTime || !sessionType || !sessionTopic.trim()) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
     try {
-      // This is a placeholder implementation
-      // In a real implementation, we would submit the booking to Supabase
+      setLoading(true);
+      setError('');
+
+      // Format date and time for database
+      const formattedDate = selectedDate.toISOString().split('T')[0];
       
-      console.log('Booking submitted:', {
-        mentorId,
-        ...values,
-        cost: calculateCost(values.duration),
-      });
-      
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      toast({
-        title: 'Booking Request Submitted',
-        description: `Your session with ${mentorName} has been requested. Proceed to payment to confirm.`,
-      });
-      
-      // Navigate to payment page or call success callback
-      if (onSuccess) {
-        onSuccess();
-      } else {
-        // In a real implementation, we would navigate to the payment page with the booking ID
-        navigate(`/payment?bookingId=placeholder-id&amount=${calculateCost(values.duration)}`);
+      // Create booking in Supabase
+      const { data, error: bookingError } = await supabase
+        .from('bookings')
+        .insert([
+          {
+            mentee_id: user.id,
+            mentor_id: mentor.id,
+            date: formattedDate,
+            time: selectedTime,
+            session_type: sessionType,
+            topic: sessionTopic,
+            notes: additionalNotes,
+            status: 'pending',
+            created_at: new Date().toISOString()
+          }
+        ])
+        .select();
+
+      if (bookingError) throw bookingError;
+
+      // Update availability to mark the slot as unavailable
+      const { error: availabilityError } = await supabase
+        .from('mentor_availability')
+        .update({ available: false })
+        .match({ 
+          mentor_id: mentor.id, 
+          date: formattedDate, 
+          time: selectedTime 
+        });
+
+      if (availabilityError) {
+        console.error('Error updating availability:', availabilityError);
+        // Continue anyway as the booking was successful
       }
+
+      setSuccess(true);
+      
+      // Reset form
+      setTimeout(() => {
+        if (onClose) {
+          onClose();
+        } else {
+          navigate('/dashboard');
+        }
+      }, 3000);
+
     } catch (error) {
-      console.error('Error submitting booking:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to submit booking request. Please try again.',
-        variant: 'destructive',
-      });
+      console.error('Error creating booking:', error);
+      setError('Failed to create booking. Please try again.');
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
-  // Generate time slot options
-  const generateTimeSlots = () => {
-    const slots = [];
-    for (let hour = 8; hour < 20; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
-        const formattedHour = hour % 12 === 0 ? 12 : hour % 12;
-        const period = hour < 12 ? 'AM' : 'PM';
-        const formattedMinute = minute === 0 ? '00' : minute;
-        const time = `${formattedHour}:${formattedMinute} ${period}`;
-        const value = `${hour.toString().padStart(2, '0')}:${formattedMinute}`;
-        slots.push({ label: time, value });
-      }
-    }
-    return slots;
+  const renderStepIndicator = () => {
+    return (
+      <div className="booking-steps">
+        <div className={`booking-step ${step >= 1 ? 'active' : ''}`}>
+          <div className="step-number">1</div>
+          <div className="step-label">Select Time</div>
+        </div>
+        <div className="step-connector"></div>
+        <div className={`booking-step ${step >= 2 ? 'active' : ''}`}>
+          <div className="step-number">2</div>
+          <div className="step-label">Session Details</div>
+        </div>
+        <div className="step-connector"></div>
+        <div className={`booking-step ${step >= 3 ? 'active' : ''}`}>
+          <div className="step-number">3</div>
+          <div className="step-label">Confirm</div>
+        </div>
+      </div>
+    );
   };
 
-  const timeSlots = generateTimeSlots();
-  const selectedDuration = form.watch('duration');
-  const sessionCost = calculateCost(selectedDuration || '60');
+  const renderStep1 = () => {
+    return (
+      <div className="booking-step-content">
+        <h3 className="booking-step-title">Select a Date & Time</h3>
+        <p className="booking-step-description">
+          Choose from {mentor.name}'s available time slots.
+        </p>
+        
+        <Calendar 
+          mentorId={mentor.id}
+          onTimeSelected={handleTimeSelected}
+          availability={mentor.availability}
+        />
+        
+        {error && <div className="booking-error">{error}</div>}
+        
+        <div className="booking-actions">
+          <button 
+            className="booking-button-secondary"
+            onClick={onClose}
+          >
+            Cancel
+          </button>
+          <button 
+            className="booking-button-primary"
+            onClick={handleNextStep}
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    );
+  };
 
-  return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Book a Session with {mentorName}</CardTitle>
-        <CardDescription>
-          Select your preferred date, time, and duration for the mentoring session.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField
-                control={form.control}
-                name="sessionDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Session Date</FormLabel>
-                    <FormControl>
-                      <div className="flex items-center">
-                        <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
-                        <Input type="date" {...field} min={new Date().toISOString().split('T')[0]} />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="sessionTime"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Session Time</FormLabel>
-                    <FormControl>
-                      <div className="flex items-center">
-                        <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a time" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {timeSlots.map((slot) => (
-                              <SelectItem key={slot.value} value={slot.value}>
-                                {slot.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="duration"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Session Duration</FormLabel>
-                    <FormControl>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select duration" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="30">30 minutes (${(hourlyRate * 0.5).toFixed(2)})</SelectItem>
-                          <SelectItem value="60">60 minutes (${hourlyRate.toFixed(2)})</SelectItem>
-                          <SelectItem value="90">90 minutes (${(hourlyRate * 1.5).toFixed(2)})</SelectItem>
-                          <SelectItem value="120">120 minutes (${(hourlyRate * 2).toFixed(2)})</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="topic"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Session Topic</FormLabel>
-                    <FormControl>
-                      <Input placeholder="What would you like to discuss?" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Additional Notes (Optional)</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Share any specific questions or topics you'd like to cover"
-                      className="min-h-[100px]"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <div className="bg-muted p-4 rounded-lg">
-              <div className="flex justify-between items-center">
-                <span className="font-medium">Session Cost:</span>
-                <span className="text-lg font-bold">${sessionCost}</span>
+  const renderStep2 = () => {
+    return (
+      <div className="booking-step-content">
+        <h3 className="booking-step-title">Session Details</h3>
+        <p className="booking-step-description">
+          Tell {mentor.name} what you'd like to discuss in your session.
+        </p>
+        
+        <div className="booking-form-group">
+          <label className="booking-label">Session Type</label>
+          <div className="booking-session-types">
+            {sessionTypes.map((type, index) => (
+              <div 
+                key={index}
+                className={`booking-session-type ${sessionType === type ? 'selected' : ''}`}
+                onClick={() => setSessionType(type)}
+              >
+                {type}
               </div>
-              <p className="text-sm text-muted-foreground mt-2">
-                You will be prompted to complete payment after submitting this booking request.
-              </p>
+            ))}
+          </div>
+        </div>
+        
+        <div className="booking-form-group">
+          <label className="booking-label">Session Topic</label>
+          <input
+            type="text"
+            className="booking-input"
+            placeholder="E.g., Career transition to product management"
+            value={sessionTopic}
+            onChange={(e) => setSessionTopic(e.target.value)}
+          />
+        </div>
+        
+        <div className="booking-form-group">
+          <label className="booking-label">Additional Notes (Optional)</label>
+          <textarea
+            className="booking-textarea"
+            placeholder="Share any specific questions or information that will help your mentor prepare"
+            value={additionalNotes}
+            onChange={(e) => setAdditionalNotes(e.target.value)}
+            rows={4}
+          />
+        </div>
+        
+        {error && <div className="booking-error">{error}</div>}
+        
+        <div className="booking-actions">
+          <button 
+            className="booking-button-secondary"
+            onClick={handlePrevStep}
+          >
+            Back
+          </button>
+          <button 
+            className="booking-button-primary"
+            onClick={handleNextStep}
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderStep3 = () => {
+    const formattedDate = selectedDate ? selectedDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }) : '';
+
+    return (
+      <div className="booking-step-content">
+        <h3 className="booking-step-title">Confirm Your Booking</h3>
+        <p className="booking-step-description">
+          Please review your session details before confirming.
+        </p>
+        
+        <div className="booking-summary">
+          <div className="booking-summary-item">
+            <div className="booking-summary-label">Mentor</div>
+            <div className="booking-summary-value">{mentor.name}</div>
+          </div>
+          
+          <div className="booking-summary-item">
+            <div className="booking-summary-label">Date & Time</div>
+            <div className="booking-summary-value">
+              {formattedDate} at {selectedTime}
             </div>
-            
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? (
+          </div>
+          
+          <div className="booking-summary-item">
+            <div className="booking-summary-label">Session Type</div>
+            <div className="booking-summary-value">{sessionType}</div>
+          </div>
+          
+          <div className="booking-summary-item">
+            <div className="booking-summary-label">Topic</div>
+            <div className="booking-summary-value">{sessionTopic}</div>
+          </div>
+          
+          {additionalNotes && (
+            <div className="booking-summary-item">
+              <div className="booking-summary-label">Additional Notes</div>
+              <div className="booking-summary-value">{additionalNotes}</div>
+            </div>
+          )}
+          
+          <div className="booking-summary-item">
+            <div className="booking-summary-label">Session Fee</div>
+            <div className="booking-summary-value">${mentor.hourlyRate || 75}</div>
+          </div>
+        </div>
+        
+        <div className="booking-terms">
+          <p>By confirming this booking, you agree to Pathwaiz's <a href="/terms">Terms of Service</a> and <a href="/cancellation-policy">Cancellation Policy</a>.</p>
+        </div>
+        
+        {error && <div className="booking-error">{error}</div>}
+        
+        {success ? (
+          <div className="booking-success">
+            <svg xmlns="http://www.w3.org/2000/svg" className="booking-success-icon" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <h3>Booking Confirmed!</h3>
+            <p>Your session with {mentor.name} has been scheduled. You'll receive a confirmation email shortly.</p>
+          </div>
+        ) : (
+          <div className="booking-actions">
+            <button 
+              className="booking-button-secondary"
+              onClick={handlePrevStep}
+              disabled={loading}
+            >
+              Back
+            </button>
+            <button 
+              className="booking-button-primary"
+              onClick={handleSubmit}
+              disabled={loading}
+            >
+              {loading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <span className="booking-spinner"></span>
                   Processing...
                 </>
               ) : (
-                <>
-                  <CreditCard className="mr-2 h-4 w-4" />
-                  Proceed to Payment
-                </>
+                'Confirm Booking'
               )}
-            </Button>
-          </form>
-        </Form>
-      </CardContent>
-      <CardFooter className="flex justify-center border-t pt-6">
-        <p className="text-sm text-muted-foreground">
-          By booking a session, you agree to Pathwaiz's Terms of Service and Cancellation Policy.
-        </p>
-      </CardFooter>
-    </Card>
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="booking-form-container">
+      {renderStepIndicator()}
+      
+      <div className="booking-form-content">
+        {step === 1 && renderStep1()}
+        {step === 2 && renderStep2()}
+        {step === 3 && renderStep3()}
+      </div>
+    </div>
   );
 };
 
