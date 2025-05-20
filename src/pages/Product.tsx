@@ -1,16 +1,13 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Shield, Users, MessageSquare, Rocket, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import NavBar from '@/components/NavBar';
-import Footer from '@/components/Footer';
+import Layout from '@/components/Layout';
 
 const Product: React.FC = () => {
   return (
-    <div className="min-h-screen flex flex-col">
-      <NavBar />
-      <main className="flex-grow">
+    <Layout>
+      <main>
         {/* Hero Section */}
         <section className="py-20 px-4">
           <div className="container-custom">
@@ -210,8 +207,7 @@ const Product: React.FC = () => {
           </div>
         </section>
       </main>
-      <Footer />
-    </div>
+    </Layout>
   );
 };
 
