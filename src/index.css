@@ -1,9 +1,16 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
  
 @layer base {
   :root {
+    --font-inter: 'Inter', sans-serif;
+    --font-dm-serif: 'DM Serif Display', serif;
+    
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
  
@@ -13,7 +20,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
  
-    --primary: 222.2 47.4% 11.2%;
+    --primary: 210 80% 56%;
     --primary-foreground: 210 40% 98%;
  
     --secondary: 210 40% 96.1%;
@@ -71,10 +78,52 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+  }
+  h1, h2, h3, h4 {
+    @apply font-display font-bold;
+  }
+  
+  /* Make focus visible for accessibility */
+  *:focus-visible {
+    @apply outline-pathwaiz-blue ring-2 ring-pathwaiz-blue ring-offset-2;
   }
 }
 
-.container-custom {
-  @apply container max-w-6xl mx-auto px-4 sm:px-6;
+@layer components {
+  .container-custom {
+    @apply container max-w-6xl mx-auto px-4 sm:px-6;
+  }
+  
+  .section-padding {
+    @apply py-16 md:py-24 px-4;
+  }
+  
+  .btn-primary {
+    @apply bg-pathwaiz-blue text-white hover:bg-pathwaiz-darkBlue transition-colors duration-200;
+  }
+  
+  .btn-secondary {
+    @apply border-pathwaiz-black text-pathwaiz-black hover:bg-gray-100 transition-colors duration-200;
+  }
+  
+  .card {
+    @apply bg-white rounded-2xl shadow-soft hover:shadow-hover transition-shadow duration-300 p-6;
+  }
+  
+  .text-gradient {
+    @apply bg-gradient-to-r from-pathwaiz-blue to-blue-700 bg-clip-text text-transparent;
+  }
+}
+
+.hover-translate {
+  @apply transition-transform duration-200 hover:-translate-y-1;
+}
+
+.nav-link {
+  @apply relative inline-block after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-pathwaiz-blue after:transform after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-200;
+}
+
+.nav-link-active {
+  @apply after:scale-x-100;
 }

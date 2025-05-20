@@ -18,7 +18,7 @@ const AuthButtons: React.FC<AuthButtonsProps> = ({
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   
-  const buttonClasses = isMobile ? "w-full" : "";
+  const mobileClasses = isMobile ? "w-full mb-1 justify-center" : "";
 
   const handleLogin = () => {
     navigate('/auth');
@@ -48,40 +48,44 @@ const AuthButtons: React.FC<AuthButtonsProps> = ({
 
   if (user) {
     return (
-      <>
+      <div className={`flex ${isMobile ? 'flex-col' : 'items-center'} gap-3`}>
         <Button 
           variant="outline" 
-          className={`border-black text-black hover:bg-gray-100 ${buttonClasses}`}
+          className={`border-black text-pathwaiz-black hover:bg-gray-100 hover:text-pathwaiz-blue hover-translate ${mobileClasses}`}
           onClick={handleProfileClick}
+          size={isMobile ? "lg" : "default"}
         >
           My Profile
         </Button>
         <Button 
-          className={`bg-pathwaiz-blue text-white hover:bg-opacity-90 ${buttonClasses}`}
+          className={`bg-pathwaiz-blue text-white hover:bg-pathwaiz-darkBlue hover-translate ${mobileClasses}`}
           onClick={handleSignOut}
+          size={isMobile ? "lg" : "default"}
         >
           Sign Out
         </Button>
-      </>
+      </div>
     );
   }
   
   return (
-    <>
+    <div className={`flex ${isMobile ? 'flex-col' : 'items-center'} gap-3`}>
       <Button 
         variant="outline" 
-        className={`border-black text-black hover:bg-gray-100 ${buttonClasses}`}
+        className={`border-black text-pathwaiz-black hover:bg-gray-100 hover:text-pathwaiz-blue hover-translate ${mobileClasses}`}
         onClick={handleLogin}
+        size={isMobile ? "lg" : "default"}
       >
         Log In
       </Button>
       <Button 
-        className={`bg-pathwaiz-blue text-white hover:bg-opacity-90 ${buttonClasses}`}
+        className={`bg-pathwaiz-blue text-white hover:bg-pathwaiz-darkBlue hover-translate ${mobileClasses}`}
         onClick={handleSignUp}
+        size={isMobile ? "lg" : "default"}
       >
         Sign Up
       </Button>
-    </>
+    </div>
   );
 };
 
