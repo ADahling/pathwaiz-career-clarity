@@ -1,5 +1,4 @@
-
-import React from "react";
+import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -23,6 +22,11 @@ import Pricing from "./pages/Pricing";
 import AboutUs from "./pages/AboutUs";
 import Careers from "./pages/Careers";
 import Contact from "./pages/Contact";
+import Booking from "./pages/Booking";
+
+// Import premium styling
+import '@/styles/premium-design-system.css';
+import '@/styles/navbar-animations.css';
 
 const queryClient = new QueryClient();
 
@@ -35,37 +39,44 @@ const App = () => (
             <Toaster />
             <Sonner />
             <Routes>
-              <Route path="/" element={<Layout><Index /></Layout>} />
+              {/* Public routes */}
+              <Route path="/" element={<Layout />}>
+                <Route index element={<Index />} />
+                <Route path="product" element={<Product />} />
+                <Route path="how-it-works" element={<HowItWorksPage />} />
+                <Route path="find-a-mentor" element={<FindAMentor />} />
+                <Route path="become-a-mentor" element={<BecomeAMentor />} />
+                <Route path="pricing" element={<Pricing />} />
+                <Route path="about-us" element={<AboutUs />} />
+                <Route path="careers" element={<Careers />} />
+                <Route path="contact" element={<Contact />} />
+                <Route path="*" element={<NotFound />} />
+              </Route>
+              
+              {/* Auth route - no layout */}
               <Route path="/auth" element={<Auth />} />
-              <Route path="/product" element={<Layout><Product /></Layout>} />
-              <Route path="/how-it-works" element={<Layout><HowItWorksPage /></Layout>} />
-              <Route path="/find-a-mentor" element={<Layout><FindAMentor /></Layout>} />
-              <Route path="/become-a-mentor" element={<Layout><BecomeAMentor /></Layout>} />
-              <Route path="/pricing" element={<Layout><Pricing /></Layout>} />
-              <Route path="/about-us" element={<Layout><AboutUs /></Layout>} />
-              <Route path="/careers" element={<Layout><Careers /></Layout>} />
-              <Route path="/contact" element={<Layout><Contact /></Layout>} />
-              <Route path="/onboarding" element={
-                <ProtectedRoute>
-                  <Layout><Onboarding /></Layout>
-                </ProtectedRoute>
-              } />
-              <Route path="/mentee-profile" element={
-                <ProtectedRoute requiredRole="mentee">
-                  <Layout><MenteeProfile /></Layout>
-                </ProtectedRoute>
-              } />
-              <Route path="/mentor-profile" element={
-                <ProtectedRoute requiredRole="mentor">
-                  <Layout><MentorProfile /></Layout>
-                </ProtectedRoute>
-              } />
-              <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <Layout><Dashboard /></Layout>
-                </ProtectedRoute>
-              } />
-              <Route path="*" element={<Layout><NotFound /></Layout>} />
+              
+              {/* Protected routes */}
+              <Route element={<ProtectedRoute />}>
+                <Route element={<Layout />}>
+                  <Route path="/onboarding" element={<Onboarding />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/booking" element={<Booking />} />
+                </Route>
+              </Route>
+              
+              {/* Role-specific protected routes */}
+              <Route element={<ProtectedRoute requiredRole="mentee" />}>
+                <Route element={<Layout />}>
+                  <Route path="/mentee-profile" element={<MenteeProfile />} />
+                </Route>
+              </Route>
+              
+              <Route element={<ProtectedRoute requiredRole="mentor" />}>
+                <Route element={<Layout />}>
+                  <Route path="/mentor-profile" element={<MentorProfile />} />
+                </Route>
+              </Route>
             </Routes>
           </TooltipProvider>
         </AuthProvider>
@@ -75,5 +86,3 @@ const App = () => (
 );
 
 export default App;
-
-import '@/styles/navbar-animations.css';
