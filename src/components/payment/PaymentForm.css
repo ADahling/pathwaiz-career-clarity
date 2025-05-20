@@ -1,0 +1,184 @@
+.payment-container {
+  font-family: var(--font-primary);
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.payment-form {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  padding: 24px;
+}
+
+.payment-form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.payment-form-header h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text-dark);
+  margin: 0;
+}
+
+.payment-amount {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.payment-form-fields {
+  margin-bottom: 24px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-dark);
+  margin-bottom: 8px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: var(--color-text-dark);
+  transition: border-color 0.2s ease;
+}
+
+.form-group input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+}
+
+.card-element-container {
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background-color: white;
+  transition: border-color 0.2s ease;
+}
+
+.card-element-container:focus-within {
+  border-color: var(--color-primary);
+}
+
+.payment-error {
+  background-color: #FFEBEE;
+  color: #E53935;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  margin-bottom: 20px;
+}
+
+.payment-form-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.cancel-button, .pay-button {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cancel-button {
+  background-color: white;
+  color: var(--color-text-dark);
+  border: 1px solid var(--color-border);
+}
+
+.cancel-button:hover {
+  background-color: var(--color-background-light);
+}
+
+.pay-button {
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  flex-grow: 1;
+  margin-left: 12px;
+}
+
+.pay-button:hover {
+  background-color: var(--color-primary-dark);
+}
+
+.pay-button:disabled, .cancel-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+}
+
+.payment-security-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background-color: var(--color-background-light);
+  border-radius: 8px;
+}
+
+.security-icon {
+  width: 20px;
+  height: 20px;
+  color: var(--color-text-medium);
+}
+
+.payment-security-info p {
+  font-size: 0.75rem;
+  color: var(--color-text-medium);
+  margin: 0;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 640px) {
+  .payment-form {
+    padding: 16px;
+  }
+  
+  .payment-form-actions {
+    flex-direction: column-reverse;
+    gap: 12px;
+  }
+  
+  .cancel-button, .pay-button {
+    width: 100%;
+    margin-left: 0;
+  }
+}

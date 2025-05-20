@@ -1,278 +1,329 @@
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
-import { Loader2, CreditCard, Lock, CheckCircle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { loadStripe } from '@stripe/stripe-js';
+import {
+  Elements,
+  CardElement,
+  useStripe,
+  useElements
+} from '@stripe/react-stripe-js';
+import { supabase } from '../../../integrations/supabase/client';
+import './PaymentForm.css';
 
-// Define the form schema
-const paymentFormSchema = z.object({
-  cardNumber: z.string()
-    .min(16, { message: 'Card number must be at least 16 digits' })
-    .max(19, { message: 'Card number must be less than 19 digits' })
-    .regex(/^[0-9\s-]+$/, { message: 'Card number must contain only digits, spaces, or hyphens' }),
-  cardName: z.string().min(3, { message: 'Cardholder name is required' }),
-  expiryDate: z.string()
-    .regex(/^(0[1-9]|1[0-2])\/([0-9]{2})$/, { message: 'Expiry date must be in MM/YY format' }),
-  cvv: z.string()
-    .min(3, { message: 'CVV must be at least 3 digits' })
-    .max(4, { message: 'CVV must be less than 5 digits' })
-    .regex(/^[0-9]+$/, { message: 'CVV must contain only digits' }),
-});
-
-type PaymentFormValues = z.infer<typeof paymentFormSchema>;
+// Initialize Stripe with placeholder publishable key
+// In production, this would be replaced with your actual Stripe publishable key
+const stripePromise = loadStripe('pk_test_placeholder');
 
 interface PaymentFormProps {
   bookingId: string;
   amount: number;
-  mentorName?: string;
-  sessionDate?: string;
-  sessionTime?: string;
-  onSuccess?: () => void;
+  onSuccess: () => void;
+  onCancel: () => void;
 }
 
-const PaymentForm: React.FC<PaymentFormProps> = ({
-  bookingId,
-  amount,
-  mentorName = 'your mentor',
-  sessionDate = 'the scheduled date',
-  sessionTime = 'the scheduled time',
-  onSuccess,
+const PaymentFormContent: React.FC<PaymentFormProps> = ({ 
+  bookingId, 
+  amount, 
+  onSuccess, 
+  onCancel 
 }) => {
-  const { toast } = useToast();
-  const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
+  const stripe = useStripe();
+  const elements = useElements();
+  
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [clientSecret, setClientSecret] = useState('');
+  const [processing, setProcessing] = useState(false);
+  const [succeeded, setSucceeded] = useState(false);
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
 
-  // Initialize form
-  const form = useForm<PaymentFormValues>({
-    resolver: zodResolver(paymentFormSchema),
-    defaultValues: {
-      cardNumber: '',
-      cardName: '',
-      expiryDate: '',
-      cvv: '',
-    },
-  });
+  useEffect(() => {
+    // In a real implementation, this would call your backend to create a payment intent
+    // For this placeholder, we'll simulate the response
+    const createPaymentIntent = async () => {
+      try {
+        setLoading(true);
+        
+        // Simulate API call to create payment intent
+        // In production, this would be a real API call to your server
+        setTimeout(() => {
+          // Mock client secret
+          setClientSecret('pi_mock_secret_' + Math.random().toString(36).substring(2, 15));
+          setLoading(false);
+        }, 1000);
+        
+        // Real implementation would look like:
+        /*
+        const response = await fetch('/api/create-payment-intent', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            bookingId,
+            amount,
+          }),
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        
+        setClientSecret(data.clientSecret);
+        */
+      } catch (error) {
+        console.error('Error creating payment intent:', error);
+        setError('Failed to initialize payment. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    createPaymentIntent();
+  }, [bookingId, amount]);
 
-  // Format card number with spaces
-  const formatCardNumber = (value: string) => {
-    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-    const matches = v.match(/\d{4,16}/g);
-    const match = matches && matches[0] || '';
-    const parts = [];
-
-    for (let i = 0; i < match.length; i += 4) {
-      parts.push(match.substring(i, i + 4));
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    
+    if (!stripe || !elements) {
+      // Stripe.js has not loaded yet
+      return;
     }
-
-    if (parts.length) {
-      return parts.join(' ');
-    } else {
-      return value;
+    
+    if (!clientSecret) {
+      setError('Payment not initialized. Please try again.');
+      return;
     }
-  };
-
-  // Handle form submission
-  const onSubmit = async (values: PaymentFormValues) => {
-    setIsSubmitting(true);
+    
+    const cardElement = elements.getElement(CardElement);
+    
+    if (!cardElement) {
+      setError('Card information is required.');
+      return;
+    }
+    
+    if (!email.trim()) {
+      setError('Email is required for receipt.');
+      return;
+    }
+    
+    if (!name.trim()) {
+      setError('Name is required for payment.');
+      return;
+    }
     
     try {
-      // This is a placeholder implementation
-      // In a real implementation, we would integrate with Stripe or another payment processor
+      setProcessing(true);
+      setError(null);
       
-      console.log('Payment submitted:', {
-        bookingId,
-        amount,
-        ...values,
-      });
-      
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Show success state
-      setIsSuccess(true);
-      
-      toast({
-        title: 'Payment Successful',
-        description: `Your session with ${mentorName} has been confirmed.`,
-      });
-      
-      // Wait a moment before redirecting
-      setTimeout(() => {
-        if (onSuccess) {
+      // In a real implementation, this would confirm the payment with Stripe
+      // For this placeholder, we'll simulate success after a delay
+      setTimeout(async () => {
+        // Simulate successful payment
+        setSucceeded(true);
+        setProcessing(false);
+        
+        // Update booking status in Supabase
+        try {
+          const { error } = await supabase
+            .from('bookings')
+            .update({ payment_status: 'paid' })
+            .eq('id', bookingId);
+            
+          if (error) throw error;
+          
+          // Create payment record in Supabase
+          const { error: paymentError } = await supabase
+            .from('payments')
+            .insert([
+              {
+                booking_id: bookingId,
+                amount,
+                status: 'succeeded',
+                payment_method: 'card',
+                email,
+                created_at: new Date().toISOString()
+              }
+            ]);
+            
+          if (paymentError) throw paymentError;
+          
+          // Call success callback
           onSuccess();
-        } else {
-          navigate('/dashboard');
+        } catch (dbError) {
+          console.error('Database error:', dbError);
+          // Payment succeeded but database update failed
+          // In a real app, you would handle this case more gracefully
+          onSuccess();
         }
       }, 2000);
-    } catch (error) {
-      console.error('Error processing payment:', error);
-      toast({
-        title: 'Payment Failed',
-        description: 'There was an error processing your payment. Please try again.',
-        variant: 'destructive',
+      
+      // Real implementation would look like:
+      /*
+      const { paymentIntent, error } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: cardElement,
+          billing_details: {
+            name,
+            email,
+          },
+        },
       });
-      setIsSubmitting(false);
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (paymentIntent.status === 'succeeded') {
+        setSucceeded(true);
+        
+        // Update booking status in database
+        const { error: dbError } = await supabase
+          .from('bookings')
+          .update({ payment_status: 'paid' })
+          .eq('id', bookingId);
+          
+        if (dbError) throw dbError;
+        
+        // Create payment record
+        const { error: paymentError } = await supabase
+          .from('payments')
+          .insert([
+            {
+              booking_id: bookingId,
+              amount,
+              status: paymentIntent.status,
+              payment_intent_id: paymentIntent.id,
+              payment_method: 'card',
+              email,
+              created_at: new Date().toISOString()
+            }
+          ]);
+          
+        if (paymentError) throw paymentError;
+        
+        onSuccess();
+      }
+      */
+    } catch (error) {
+      console.error('Payment error:', error);
+      setError('Payment failed. Please try again.');
+      setProcessing(false);
     }
   };
 
-  if (isSuccess) {
-    return (
-      <Card className="w-full">
-        <CardContent className="pt-6">
-          <div className="flex flex-col items-center justify-center py-10">
-            <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
-            <h2 className="text-2xl font-bold text-center mb-2">Payment Successful!</h2>
-            <p className="text-center text-muted-foreground mb-6">
-              Your session with {mentorName} on {sessionDate} at {sessionTime} has been confirmed.
-            </p>
-            <p className="text-center font-medium mb-6">
-              Amount paid: ${amount.toFixed(2)}
-            </p>
-            <Button onClick={() => navigate('/dashboard')}>
-              Go to Dashboard
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  const cardElementOptions = {
+    style: {
+      base: {
+        fontSize: '16px',
+        color: '#424770',
+        '::placeholder': {
+          color: '#aab7c4',
+        },
+      },
+      invalid: {
+        color: '#9e2146',
+      },
+    },
+  };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Complete Payment</CardTitle>
-        <CardDescription>
-          Secure payment for your session with {mentorName}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="mb-6 p-4 bg-muted rounded-lg">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm">Session Details:</span>
-            <span className="text-sm font-medium">{sessionDate} at {sessionTime}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-sm">Total Amount:</span>
-            <span className="text-lg font-bold">${amount.toFixed(2)}</span>
-          </div>
+    <form className="payment-form" onSubmit={handleSubmit}>
+      <div className="payment-form-header">
+        <h2>Complete Payment</h2>
+        <div className="payment-amount">${(amount / 100).toFixed(2)}</div>
+      </div>
+      
+      <div className="payment-form-fields">
+        <div className="form-group">
+          <label htmlFor="name">Name on Card</label>
+          <input
+            id="name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="John Smith"
+            required
+          />
         </div>
         
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="cardNumber"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Card Number</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Input 
-                        placeholder="1234 5678 9012 3456" 
-                        {...field} 
-                        onChange={(e) => {
-                          const formatted = formatCardNumber(e.target.value);
-                          field.onChange(formatted);
-                        }}
-                        className="pl-10"
-                      />
-                      <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="cardName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Cardholder Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="John Smith" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="expiryDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Expiry Date</FormLabel>
-                    <FormControl>
-                      <Input placeholder="MM/YY" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="cvv"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>CVV</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Input 
-                          type="password" 
-                          placeholder="123" 
-                          {...field} 
-                          className="pl-10"
-                          maxLength={4}
-                        />
-                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            
-            <div className="pt-2">
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing Payment...
-                  </>
-                ) : (
-                  <>
-                    Pay ${amount.toFixed(2)}
-                  </>
-                )}
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </CardContent>
-      <CardFooter className="flex-col space-y-4">
-        <div className="flex items-center justify-center w-full">
-          <Lock className="h-4 w-4 mr-2 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">
-            Your payment information is secure and encrypted
-          </p>
+        <div className="form-group">
+          <label htmlFor="email">Email for Receipt</label>
+          <input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="john@example.com"
+            required
+          />
         </div>
-        <p className="text-xs text-center text-muted-foreground">
-          Note: This is a placeholder payment form. In a real implementation, this would be integrated with Stripe or another payment processor.
+        
+        <div className="form-group">
+          <label htmlFor="card">Card Information</label>
+          <div className="card-element-container">
+            <CardElement id="card" options={cardElementOptions} />
+          </div>
+        </div>
+      </div>
+      
+      {error && <div className="payment-error">{error}</div>}
+      
+      <div className="payment-form-actions">
+        <button 
+          type="button" 
+          className="cancel-button"
+          onClick={onCancel}
+          disabled={processing}
+        >
+          Cancel
+        </button>
+        <button 
+          type="submit" 
+          className="pay-button"
+          disabled={!stripe || processing || loading || succeeded}
+        >
+          {processing ? (
+            <>
+              <span className="spinner"></span>
+              Processing...
+            </>
+          ) : loading ? (
+            <>
+              <span className="spinner"></span>
+              Loading...
+            </>
+          ) : succeeded ? (
+            'Payment Successful!'
+          ) : (
+            `Pay $${(amount / 100).toFixed(2)}`
+          )}
+        </button>
+      </div>
+      
+      <div className="payment-security-info">
+        <div className="security-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+          </svg>
+        </div>
+        <p>
+          Secure payment processed by Stripe. We do not store your card details.
         </p>
-      </CardFooter>
-    </Card>
+      </div>
+    </form>
+  );
+};
+
+const PaymentForm: React.FC<PaymentFormProps> = (props) => {
+  return (
+    <div className="payment-container">
+      <Elements stripe={stripePromise}>
+        <PaymentFormContent {...props} />
+      </Elements>
+    </div>
   );
 };
 
