@@ -1,8 +1,8 @@
-
 import React from 'react';
 import { Search, Calendar, Lightbulb, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import Layout from '@/components/Layout';
 
 const HowItWorksPage: React.FC = () => {
   const steps = [
@@ -27,7 +27,7 @@ const HowItWorksPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <Layout>
       <main className="flex-grow">
         {/* Hero Section */}
         <section className="py-20 px-4 bg-white">
@@ -136,7 +136,7 @@ const HowItWorksPage: React.FC = () => {
           </div>
         </section>
       </main>
-    </div>
+    </Layout>
   );
 };
 

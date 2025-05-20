@@ -1,14 +1,13 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import NavBar from '@/components/NavBar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from '@/components/ui/sonner';
 import { ArrowRight, Calendar, Briefcase, TrendingUp, Users } from 'lucide-react';
+import Layout from '@/components/Layout';
 
 interface Session {
   id: string;
@@ -326,8 +325,7 @@ const Dashboard: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <NavBar />
+    <Layout>
       <div className="container-custom flex-grow my-8">
         <h1 className="text-3xl font-bold mb-6">Welcome to Your Dashboard</h1>
         
@@ -342,7 +340,7 @@ const Dashboard: React.FC = () => {
           </>
         )}
       </div>
-    </div>
+    </Layout>
   );
 };
 
