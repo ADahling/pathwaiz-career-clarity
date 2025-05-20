@@ -10,11 +10,11 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-pathwaiz-blue text-white hover:bg-pathwaiz-darkBlue shadow-soft hover:shadow-hover",
+        default: "bg-pathwaiz-blue text-white hover:bg-pathwaiz-darkBlue shadow-soft hover:shadow-hover transform hover:-translate-y-0.5 transition-all",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         outline:
-          "border-2 border-pathwaiz-black bg-transparent hover:bg-gray-50 text-pathwaiz-black shadow-soft hover:shadow-hover",
+          "border-2 border-pathwaiz-black bg-transparent hover:bg-gray-50 text-pathwaiz-black shadow-soft hover:shadow-hover transform hover:-translate-y-0.5 transition-all",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
