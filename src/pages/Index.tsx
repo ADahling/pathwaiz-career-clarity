@@ -1,26 +1,21 @@
 
 import React from 'react';
-import NavBar from '@/components/NavBar';
+import { Layout } from '@/components/Layout';
 import Hero from '@/components/Hero';
 import HowItWorks from '@/components/HowItWorks';
 import AudienceSection from '@/components/AudienceSection';
 import ValueProposition from '@/components/ValueProposition';
 import CallToAction from '@/components/CallToAction';
-import Footer from '@/components/Footer';
 
 const Index: React.FC = () => {
   return (
-    <div className="min-h-screen flex flex-col">
-      <NavBar />
-      <main className="flex-grow">
-        <Hero />
-        <HowItWorks />
-        <AudienceSection />
-        <ValueProposition />
-        <CallToAction />
-      </main>
-      <Footer />
-    </div>
+    <Layout>
+      <Hero />
+      <HowItWorks />
+      <AudienceSection />
+      <ValueProposition />
+      <CallToAction />
+    </Layout>
   );
 };
 

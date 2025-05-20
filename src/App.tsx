@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { Layout } from "./components/Layout";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
@@ -25,6 +26,13 @@ import Contact from "./pages/Contact";
 
 const queryClient = new QueryClient();
 
+// Helper to wrap routes that need the Layout
+const WithLayout = ({ Component }: { Component: React.ComponentType }) => (
+  <Layout>
+    <Component />
+  </Layout>
+);
+
 const App = () => (
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
@@ -36,35 +44,35 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
-              <Route path="/product" element={<Product />} />
-              <Route path="/how-it-works" element={<HowItWorksPage />} />
-              <Route path="/find-a-mentor" element={<FindAMentor />} />
-              <Route path="/become-a-mentor" element={<BecomeAMentor />} />
-              <Route path="/pricing" element={<Pricing />} />
-              <Route path="/about-us" element={<AboutUs />} />
-              <Route path="/careers" element={<Careers />} />
-              <Route path="/contact" element={<Contact />} />
+              <Route path="/product" element={<Layout><Product /></Layout>} />
+              <Route path="/how-it-works" element={<Layout><HowItWorksPage /></Layout>} />
+              <Route path="/find-a-mentor" element={<Layout><FindAMentor /></Layout>} />
+              <Route path="/become-a-mentor" element={<Layout><BecomeAMentor /></Layout>} />
+              <Route path="/pricing" element={<Layout><Pricing /></Layout>} />
+              <Route path="/about-us" element={<Layout><AboutUs /></Layout>} />
+              <Route path="/careers" element={<Layout><Careers /></Layout>} />
+              <Route path="/contact" element={<Layout><Contact /></Layout>} />
               <Route path="/onboarding" element={
                 <ProtectedRoute>
-                  <Onboarding />
+                  <Layout><Onboarding /></Layout>
                 </ProtectedRoute>
               } />
               <Route path="/mentee-profile" element={
                 <ProtectedRoute requiredRole="mentee">
-                  <MenteeProfile />
+                  <Layout><MenteeProfile /></Layout>
                 </ProtectedRoute>
               } />
               <Route path="/mentor-profile" element={
                 <ProtectedRoute requiredRole="mentor">
-                  <MentorProfile />
+                  <Layout><MentorProfile /></Layout>
                 </ProtectedRoute>
               } />
               <Route path="/dashboard" element={
                 <ProtectedRoute>
-                  <Dashboard />
+                  <Layout><Dashboard /></Layout>
                 </ProtectedRoute>
               } />
-              <Route path="*" element={<NotFound />} />
+              <Route path="*" element={<Layout><NotFound /></Layout>} />
             </Routes>
           </TooltipProvider>
         </AuthProvider>
