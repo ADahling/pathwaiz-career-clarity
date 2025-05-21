@@ -1,65 +1,52 @@
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { toast } from '@/components/ui/sonner';
 
-interface AppError {
-  message: string;
-  details?: string;
-  code?: string;
-  originalError?: any;
-}
-
 interface ErrorContextType {
-  error: AppError | null;
-  setError: (error: AppError | null) => void;
   captureError: (error: any, message?: string) => void;
   handleError: (error: any, message?: string) => void;
-  clearError: () => void;
 }
 
-const ErrorContext = createContext<ErrorContextType | undefined>(undefined);
+const defaultErrorContext: ErrorContextType = {
+  captureError: () => {},
+  handleError: () => {},
+};
 
-export const ErrorProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [error, setError] = useState<AppError | null>(null);
+export const ErrorContext = createContext<ErrorContextType>(defaultErrorContext);
 
-  const captureError = (err: any, message?: string): void => {
-    console.error('Error captured:', err);
-    
-    const appError: AppError = {
-      message: message || 'An error occurred',
-      details: err?.message || 'Unknown error',
-      code: err?.code,
-      originalError: err
-    };
-    
-    setError(appError);
-    
-    // Show toast notification
-    toast.error(appError.message, {
-      description: appError.details,
-      duration: 5000,
-    });
+export const useError = () => useContext(ErrorContext);
+export const useErrorContext = useError; // Alias for backward compatibility
+
+interface ErrorProviderProps {
+  children: React.ReactNode;
+}
+
+export const ErrorProvider: React.FC<ErrorProviderProps> = ({ children }) => {
+  const [errors, setErrors] = useState<any[]>([]);
+
+  const captureError = (error: any, message?: string) => {
+    console.error('Error captured:', error);
+    setErrors((prevErrors) => [...prevErrors, { error, message }]);
   };
 
-  const handleError = captureError; // Alias for legacy support
-  
-  const clearError = () => {
-    setError(null);
+  const handleError = (error: any, message?: string) => {
+    console.error('Error handled:', error, message);
+    
+    // Show error message in toast
+    const errorMessage = message || 
+      (error?.message ? error.message : 'An unexpected error occurred');
+    
+    toast.error(errorMessage, {
+      description: error?.details || 'Please try again or contact support if the issue persists.',
+    });
+    
+    // Add error to the captured errors
+    captureError(error, message);
   };
 
   return (
-    <ErrorContext.Provider value={{ error, setError, captureError, handleError, clearError }}>
+    <ErrorContext.Provider value={{ captureError, handleError }}>
       {children}
     </ErrorContext.Provider>
   );
 };
-
-export const useError = (): ErrorContextType => {
-  const context = useContext(ErrorContext);
-  if (context === undefined) {
-    throw new Error('useError must be used within an ErrorProvider');
-  }
-  return context;
-};
-
-export const useErrorContext = useError; // Alias for backward compatibility

@@ -63,7 +63,6 @@ export const MentorMatching: React.FC = () => {
   const handleQuestionnaireComplete = async (answers: any) => {
     if (!user) {
       toast({
-        title: "Authentication Required",
         description: "Please sign in to save your preferences and see mentor matches.",
         variant: "destructive"
       });
@@ -99,7 +98,6 @@ export const MentorMatching: React.FC = () => {
       setActiveTab('results');
       
       toast({
-        title: "Mentor Matches Generated",
         description: "We've found mentors that match your preferences!",
       });
     } catch (error) {
