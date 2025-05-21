@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,7 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 // Define the form schema
 const reviewFormSchema = z.object({
   rating: z.number().min(1, { message: 'Please select a rating' }).max(5),
-  content: z.string().min(10, { message: 'Review must be at least 10 characters' }).max(500, { message: 'Review must be less than 500 characters' }),
+  comment: z.string().min(10, { message: 'Review must be at least 10 characters' }).max(500, { message: 'Review must be less than 500 characters' }),
 });
 
 type ReviewFormValues = z.infer<typeof reviewFormSchema>;
@@ -42,49 +43,75 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
     resolver: zodResolver(reviewFormSchema),
     defaultValues: {
       rating: 0,
-      content: '',
+      comment: '',
     },
   });
 
   // Handle form submission
   const onSubmit = async (values: ReviewFormValues) => {
-    if (!user) return;
+    if (!user) {
+      toast({
+        title: "Authentication error",
+        description: "You must be logged in to submit a review",
+        variant: "destructive"
+      });
+      return;
+    }
     
     setIsSubmitting(true);
     
     try {
-      // This is a placeholder implementation
-      // In a real implementation, we would submit the review to Supabase
+      // Submit the review to Supabase
+      const { error } = await supabase
+        .from('reviews')
+        .insert({
+          mentor_id: mentorId,
+          mentee_id: user.id,
+          rating: values.rating,
+          comment: values.comment,
+        });
       
-      console.log('Review submitted:', {
-        bookingId,
-        mentorId,
-        menteeId: user.id,
-        ...values,
-      });
-      
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      if (error) throw error;
       
       toast({
         title: 'Review Submitted',
         description: `Thank you for reviewing your session with ${mentorName}.`,
       });
       
+      form.reset();
+      
       if (onSuccess) {
         onSuccess();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting review:', error);
       toast({
         title: 'Error',
-        description: 'Failed to submit review. Please try again.',
+        description: error.message || 'Failed to submit review. Please try again.',
         variant: 'destructive',
       });
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (!user) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Rate Your Session</CardTitle>
+          <CardDescription>
+            You need to be logged in to leave a review
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button asChild className="w-full">
+            <a href="/auth">Log In</a>
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full">
@@ -117,7 +144,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
             
             <FormField
               control={form.control}
-              name="content"
+              name="comment"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Your Review</FormLabel>

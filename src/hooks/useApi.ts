@@ -1,7 +1,6 @@
 
 import { useState, useCallback } from 'react';
 import { useError } from '@/contexts/ErrorContext';
-import { ErrorType, createError, ErrorSeverity } from '@/services/errorService';
 
 interface ApiState<T> {
   data: T | null;
@@ -29,9 +28,10 @@ export function useApi<T = any>() {
       setState({ data, loading: false, error: null });
       return { data, error: null };
     } catch (error: any) {
-      const appError = captureError(error);
-      setState({ data: null, loading: false, error: appError });
-      return { data: null, error: appError };
+      const appError = error instanceof Error ? error : new Error(errorMessage);
+      const enhancedError = captureError(appError);
+      setState({ data: null, loading: false, error: enhancedError });
+      return { data: null, error: enhancedError };
     }
   }, [captureError]);
 

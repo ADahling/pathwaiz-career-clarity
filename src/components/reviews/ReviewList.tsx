@@ -4,36 +4,19 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/sonner';
 import { StarRating } from './StarRating';
 import { Review } from '@/types/supabase';
-import { enhancedSupabase as mockSupabase } from '@/integrations/supabase/mockClient';
+import { supabase } from '@/integrations/supabase/client';
+import { useApi } from '@/hooks/useApi';
+import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 
 interface ReviewListProps {
   mentorId: string;
 }
 
-// Mock data for reviews since the 'reviews' table doesn't exist in Supabase yet
-const mockReviews: Review[] = [
-  {
-    id: '1',
-    mentor_id: 'mentor-1',
-    mentee_id: 'mentee-1',
-    rating: 5,
-    comment: 'Excellent mentor! Very knowledgeable and supportive.',
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    mentor_id: 'mentor-1',
-    mentee_id: 'mentee-2',
-    rating: 4,
-    comment: 'Great session, learned a lot about the industry.',
-    created_at: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-  }
-];
-
 export const ReviewList: React.FC<ReviewListProps> = ({ mentorId }) => {
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { loading, error, execute } = useApi<Review[]>();
   const { user } = useAuth();
   const [newRating, setNewRating] = useState<number | null>(null);
   const [newComment, setNewComment] = useState('');
@@ -44,21 +27,19 @@ export const ReviewList: React.FC<ReviewListProps> = ({ mentorId }) => {
   }, [mentorId]);
 
   const fetchReviews = async () => {
-    try {
-      setLoading(true);
-      setError('');
+    const result = await execute(async () => {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('*')
+        .eq('mentor_id', mentorId)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
+    }, 'Failed to load reviews');
 
-      // In a real implementation, we would fetch from Supabase
-      // For now, use mock data filtered by mentor ID
-      setTimeout(() => {
-        const filteredReviews = mockReviews.filter(review => review.mentor_id === mentorId);
-        setReviews(filteredReviews);
-        setLoading(false);
-      }, 800); // Simulate API delay
-    } catch (err) {
-      console.error('Error fetching reviews:', err);
-      setError('Failed to load reviews. Please try again.');
-      setLoading(false);
+    if (result.data) {
+      setReviews(result.data);
     }
   };
 
@@ -82,27 +63,30 @@ export const ReviewList: React.FC<ReviewListProps> = ({ mentorId }) => {
       setIsSubmitting(true);
 
       // Create a new review
-      const newReview: Review = {
-        id: `mock-${Date.now()}`,
-        mentor_id: mentorId,
-        mentee_id: user.id,
-        rating: newRating,
-        comment: newComment,
-        created_at: new Date().toISOString()
-      };
+      const { data, error } = await supabase
+        .from('reviews')
+        .insert({
+          mentor_id: mentorId,
+          mentee_id: user.id,
+          rating: newRating,
+          comment: newComment,
+        })
+        .select();
 
-      // In a real implementation, we would insert to Supabase
-      // For now, update the local state
-      setTimeout(() => {
-        setReviews([newReview, ...reviews]);
+      if (error) {
+        throw error;
+      }
+
+      if (data && data[0]) {
+        setReviews([data[0], ...reviews]);
         setNewRating(null);
         setNewComment('');
         toast.success('Review submitted successfully!');
-        setIsSubmitting(false);
-      }, 800); // Simulate API delay
-    } catch (err) {
+      }
+    } catch (err: any) {
       console.error('Error submitting review:', err);
-      toast.error('Failed to submit review. Please try again.');
+      toast.error(err.message || 'Failed to submit review. Please try again.');
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -110,81 +94,120 @@ export const ReviewList: React.FC<ReviewListProps> = ({ mentorId }) => {
   const renderReviewForm = () => {
     if (!user) {
       return (
-        <div className="review-form-login-prompt">
+        <div className="p-4 bg-muted rounded-md text-center">
           <p>
-            <a href="/auth">Log in</a> to submit a review.
+            <a href="/auth" className="text-primary hover:underline">Log in</a> to submit a review.
           </p>
         </div>
       );
     }
 
     return (
-      <div className="review-form">
-        <h3>Submit a Review</h3>
-        <div className="review-form-rating">
-          <label>Rating:</label>
+      <div className="space-y-4 border rounded-md p-4">
+        <h3 className="text-lg font-medium">Submit a Review</h3>
+        <div className="space-y-2">
+          <label className="block text-sm font-medium">Rating:</label>
           <StarRating rating={newRating || 0} onRatingChange={setNewRating} />
         </div>
-        <div className="review-form-comment">
-          <label>Comment:</label>
-          <textarea
+        <div className="space-y-2">
+          <label className="block text-sm font-medium">Comment:</label>
+          <Textarea
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             placeholder="Write your review here..."
+            className="min-h-[120px]"
           />
         </div>
-        <button
+        <Button
           onClick={handleSubmitReview}
           disabled={isSubmitting}
-          className="review-form-button"
+          className="w-full"
         >
-          {isSubmitting ? 'Submitting...' : 'Submit Review'}
-        </button>
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Submitting...
+            </>
+          ) : (
+            'Submit Review'
+          )}
+        </Button>
       </div>
     );
   };
 
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+        <p className="text-muted-foreground">Loading reviews...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8 text-center">
+        <div className="bg-destructive/10 p-4 rounded-full mb-4">
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            className="h-8 w-8 text-destructive" 
+            viewBox="0 0 20 20" 
+            fill="currentColor"
+          >
+            <path 
+              fillRule="evenodd" 
+              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" 
+              clipRule="evenodd" 
+            />
+          </svg>
+        </div>
+        <p className="text-destructive font-medium mb-2">Error loading reviews</p>
+        <p className="text-muted-foreground mb-4">{error.message}</p>
+        <Button onClick={fetchReviews} variant="outline">
+          Try Again
+        </Button>
+      </div>
+    );
+  }
+
   return (
-    <div className="review-list">
-      <h2>Reviews</h2>
-      {loading ? (
-        <div className="review-loading">
-          <div className="spinner"></div>
-          <p>Loading reviews...</p>
-        </div>
-      ) : error ? (
-        <div className="review-error">
-          <p>{error}</p>
-          <button onClick={fetchReviews}>Try Again</button>
-        </div>
-      ) : reviews.length === 0 ? (
-        <div className="review-empty">
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold">Reviews</h2>
+      {reviews.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-8 text-center">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="empty-icon"
+            className="h-12 w-12 text-muted-foreground mb-4"
             viewBox="0 0 20 20"
             fill="currentColor"
           >
             <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333a1.333 1.333 0 112.667 0v6.334a1.333 1.333 0 01-2.667 0v-6.334zM10 10a1 1 0 112 0v7a1 1 0 01-2 0v-7zM14 9.667a1.667 1.667 0 113.334 0v7.666a1.667 1.667 0 01-3.334 0v-7.666zM18 9.5a2.5 2.5 0 115 0v8a2.5 2.5 0 01-5 0v-8z" />
           </svg>
-          <p>No reviews yet. Be the first to leave a review!</p>
+          <p className="text-muted-foreground mb-2">No reviews yet.</p>
+          <p className="mb-4">Be the first to leave a review!</p>
         </div>
       ) : (
-        <div className="review-items">
+        <div className="space-y-4">
           {reviews.map((review) => (
-            <div className="review-item" key={review.id}>
-              <div className="review-header">
+            <div 
+              key={review.id} 
+              className="border rounded-md p-4 transition-shadow hover:shadow-md"
+            >
+              <div className="flex justify-between items-start mb-2">
                 <StarRating rating={review.rating} readOnly />
-                <span className="review-date">
+                <span className="text-sm text-muted-foreground">
                   {new Date(review.created_at).toLocaleDateString()}
                 </span>
               </div>
-              <p className="review-comment">{review.comment}</p>
+              <p className="text-gray-700">{review.comment}</p>
             </div>
           ))}
         </div>
       )}
-      {renderReviewForm()}
+      <div className="mt-8">
+        {renderReviewForm()}
+      </div>
     </div>
   );
 };
