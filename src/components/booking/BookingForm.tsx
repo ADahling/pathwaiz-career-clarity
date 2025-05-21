@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../../integrations/supabase/client';
-import Calendar from '../calendar/Calendar';
-import { useAuth } from '../../../contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import Calendar from '@/components/booking/calendar/Calendar';
+import { useAuth } from '@/contexts/AuthContext';
 import './BookingForm.css';
 
 interface BookingFormProps {
@@ -367,3 +367,4 @@ const BookingForm: React.FC<BookingFormProps> = ({ mentor, onClose }) => {
 };
 
 export default BookingForm;
+export { BookingForm };

@@ -1,0 +1,223 @@
+.video-session-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px 80px;
+}
+
+.video-session-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.video-session-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.video-session-subtitle {
+  font-size: 1.125rem;
+  color: var(--color-text-medium);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.video-session-content {
+  margin-bottom: 40px;
+}
+
+.video-session-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.info-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.info-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.info-card-header {
+  padding: 16px 20px;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+}
+
+.info-card-header h3 {
+  color: white;
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.info-card-content {
+  padding: 20px;
+}
+
+.info-item {
+  display: flex;
+  margin-bottom: 12px;
+}
+
+.info-item:last-child {
+  margin-bottom: 0;
+}
+
+.info-label {
+  font-weight: 500;
+  color: var(--color-text-dark);
+  width: 100px;
+  flex-shrink: 0;
+}
+
+.info-value {
+  color: var(--color-text-medium);
+}
+
+.tips-list {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.tips-list li {
+  color: var(--color-text-medium);
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.tips-list li:last-child {
+  margin-bottom: 0;
+}
+
+.session-ended-container {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  padding: 40px;
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.session-ended-icon {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-dark) 100%);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+}
+
+.session-ended-icon svg {
+  width: 40px;
+  height: 40px;
+}
+
+.session-ended-container h2 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0 0 16px 0;
+  color: var(--color-text-dark);
+}
+
+.session-ended-container p {
+  font-size: 1.125rem;
+  color: var(--color-text-medium);
+  margin: 0 0 32px 0;
+}
+
+.session-ended-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+.primary-button, .secondary-button {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.primary-button {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 12px rgba(var(--color-primary-rgb), 0.3);
+}
+
+.primary-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(var(--color-primary-rgb), 0.4);
+}
+
+.secondary-button {
+  background: white;
+  color: var(--color-text-dark);
+  border: 1px solid var(--color-border);
+}
+
+.secondary-button:hover {
+  background-color: var(--color-background-light);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+@media (max-width: 768px) {
+  .video-session-page {
+    padding: 20px 16px 60px;
+  }
+  
+  .video-session-title {
+    font-size: 1.75rem;
+  }
+  
+  .video-session-subtitle {
+    font-size: 1rem;
+  }
+  
+  .session-ended-container {
+    padding: 24px;
+  }
+  
+  .session-ended-icon {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 16px;
+  }
+  
+  .session-ended-icon svg {
+    width: 30px;
+    height: 30px;
+  }
+  
+  .session-ended-container h2 {
+    font-size: 1.5rem;
+  }
+  
+  .session-ended-container p {
+    font-size: 1rem;
+  }
+  
+  .session-ended-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+}

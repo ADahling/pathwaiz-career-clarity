@@ -1,510 +1,527 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/components/ui/use-toast';
-import { Loader2, Send, User, Users, Clock } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Message, Conversation } from '@/integrations/supabase/types';
 import { supabase } from '@/integrations/supabase/client';
+import './Messaging.css';
 
-interface MessageListProps {
-  messages: Message[];
-  currentUserId: string;
+interface MessagingProps {
+  userId: string;
+  recipientId?: string;
 }
 
-const MessageList: React.FC<MessageListProps> = ({ messages, currentUserId }) => {
-  return (
-    <ScrollArea className="h-[400px] pr-4">
-      <div className="space-y-4 p-4">
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`flex ${
-              message.sender_id === currentUserId ? 'justify-end' : 'justify-start'
-            }`}
+const Messaging: React.FC<MessagingProps> = ({ userId, recipientId }) => {
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [activeConversation, setActiveConversation] = useState<any>(null);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    fetchConversations();
+  }, [userId]);
+
+  useEffect(() => {
+    if (recipientId) {
+      const conversation = conversations.find(
+        conv => conv.recipient_id === recipientId || conv.sender_id === recipientId
+      );
+      
+      if (conversation) {
+        setActiveConversation(conversation);
+      } else {
+        // Create a new conversation object
+        setActiveConversation({
+          id: 'new',
+          recipient_id: recipientId,
+          sender_id: userId,
+          created_at: new Date().toISOString()
+        });
+      }
+    } else if (conversations.length > 0 && !activeConversation) {
+      setActiveConversation(conversations[0]);
+    }
+  }, [recipientId, conversations, userId, activeConversation]);
+
+  useEffect(() => {
+    if (activeConversation) {
+      fetchMessages(activeConversation.id);
+      
+      // Set up real-time subscription for new messages
+      const subscription = supabase
+        .channel(`messages:conversation_id=eq.${activeConversation.id}`)
+        .on('INSERT', payload => {
+          setMessages(currentMessages => [...currentMessages, payload.new]);
+        })
+        .subscribe();
+      
+      return () => {
+        subscription.unsubscribe();
+      };
+    }
+  }, [activeConversation]);
+
+  const fetchConversations = async () => {
+    try {
+      setLoading(true);
+      setError('');
+
+      // Fetch conversations where user is either sender or recipient
+      const { data, error } = await supabase
+        .from('conversations')
+        .select(`
+          *,
+          sender:sender_id(*),
+          recipient:recipient_id(*)
+        `)
+        .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
+        .order('updated_at', { ascending: false });
+
+      if (error) throw error;
+
+      setConversations(data || []);
+    } catch (err) {
+      console.error('Error fetching conversations:', err);
+      setError('Failed to load conversations. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchMessages = async (conversationId: string) => {
+    if (conversationId === 'new') return;
+    
+    try {
+      setLoading(true);
+      setError('');
+
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      setMessages(data || []);
+      
+      // Mark messages as read
+      if (data && data.length > 0) {
+        const unreadMessages = data.filter(
+          msg => msg.recipient_id === userId && !msg.read
+        );
+        
+        if (unreadMessages.length > 0) {
+          await supabase
+            .from('messages')
+            .update({ read: true })
+            .in('id', unreadMessages.map(msg => msg.id));
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching messages:', err);
+      setError('Failed to load messages. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !activeConversation) return;
+    
+    try {
+      setSending(true);
+      
+      let conversationId = activeConversation.id;
+      
+      // If this is a new conversation, create it first
+      if (conversationId === 'new') {
+        const { data, error } = await supabase
+          .from('conversations')
+          .insert([
+            {
+              sender_id: userId,
+              recipient_id: activeConversation.recipient_id,
+              last_message: newMessage,
+              updated_at: new Date().toISOString()
+            }
+          ])
+          .select();
+          
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          conversationId = data[0].id;
+          setActiveConversation({ ...data[0] });
+          setConversations([...conversations, data[0]]);
+        }
+      } else {
+        // Update conversation with last message
+        await supabase
+          .from('conversations')
+          .update({
+            last_message: newMessage,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', conversationId);
+      }
+      
+      // Send the message
+      const { data, error } = await supabase
+        .from('messages')
+        .insert([
+          {
+            conversation_id: conversationId,
+            sender_id: userId,
+            recipient_id: activeConversation.sender_id === userId 
+              ? activeConversation.recipient_id 
+              : activeConversation.sender_id,
+            content: newMessage,
+            created_at: new Date().toISOString()
+          }
+        ])
+        .select();
+        
+      if (error) throw error;
+      
+      if (data) {
+        setMessages([...messages, ...data]);
+      }
+      
+      setNewMessage('');
+    } catch (err) {
+      console.error('Error sending message:', err);
+      setError('Failed to send message. Please try again.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    if (date.toDateString() === today.toDateString()) {
+      return 'Today';
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday';
+    } else {
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined
+      });
+    }
+  };
+
+  const getOtherUser = (conversation: any) => {
+    if (!conversation) return null;
+    
+    return conversation.sender_id === userId 
+      ? conversation.recipient 
+      : conversation.sender;
+  };
+
+  const renderConversationList = () => {
+    if (loading && conversations.length === 0) {
+      return (
+        <div className="messaging-loading">
+          <div className="spinner"></div>
+          <p>Loading conversations...</p>
+        </div>
+      );
+    }
+    
+    if (error && conversations.length === 0) {
+      return (
+        <div className="messaging-error">
+          <p>{error}</p>
+          <button 
+            className="messaging-retry"
+            onClick={fetchConversations}
           >
-            <div
-              className={`max-w-[80%] rounded-lg p-3 ${
-                message.sender_id === currentUserId
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted'
-              }`}
+            Try Again
+          </button>
+        </div>
+      );
+    }
+    
+    if (conversations.length === 0) {
+      return (
+        <div className="messaging-empty">
+          <svg xmlns="http://www.w3.org/2000/svg" className="empty-icon" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+          </svg>
+          <h3>No conversations yet</h3>
+          <p>Start a conversation with a mentor or mentee to get help with your career journey.</p>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="conversation-list">
+        {conversations.map(conversation => {
+          const otherUser = getOtherUser(conversation);
+          if (!otherUser) return null;
+          
+          return (
+            <div 
+              key={conversation.id}
+              className={`conversation-item ${activeConversation?.id === conversation.id ? 'active' : ''}`}
+              onClick={() => setActiveConversation(conversation)}
             >
-              <p className="text-sm">{message.content}</p>
-              <p className="text-xs mt-1 opacity-70">
-                {new Date(message.created_at).toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
+              <div className="conversation-avatar">
+                <img 
+                  src={otherUser.profile_image || 'https://randomuser.me/api/portraits/men/32.jpg'} 
+                  alt={otherUser.name}
+                />
+                <div className="conversation-status online"></div>
+              </div>
+              
+              <div className="conversation-content">
+                <div className="conversation-header">
+                  <h3 className="conversation-name">{otherUser.name}</h3>
+                  <span className="conversation-time">
+                    {formatDate(conversation.updated_at)}
+                  </span>
+                </div>
+                
+                <div className="conversation-preview">
+                  <p className="conversation-last-message">
+                    {conversation.last_message}
+                  </p>
+                  
+                  {conversation.unread_count > 0 && (
+                    <div className="conversation-unread">
+                      {conversation.unread_count}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const renderMessageArea = () => {
+    if (!activeConversation) {
+      return (
+        <div className="message-area-empty">
+          <svg xmlns="http://www.w3.org/2000/svg" className="empty-icon" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+          </svg>
+          <h3>Select a conversation</h3>
+          <p>Choose a conversation from the list to start messaging.</p>
+        </div>
+      );
+    }
+    
+    const otherUser = getOtherUser(activeConversation);
+    
+    return (
+      <div className="message-area">
+        <div className="message-header">
+          <div className="message-header-user">
+            <img 
+              src={otherUser?.profile_image || 'https://randomuser.me/api/portraits/men/32.jpg'} 
+              alt={otherUser?.name} 
+              className="message-header-avatar"
+            />
+            <div className="message-header-info">
+              <h3 className="message-header-name">{otherUser?.name}</h3>
+              <p className="message-header-status">
+                <span className="status-indicator online"></span>
+                Online
               </p>
             </div>
           </div>
-        ))}
-      </div>
-    </ScrollArea>
-  );
-};
-
-interface MessageInputProps {
-  onSendMessage: (content: string) => void;
-  isLoading: boolean;
-}
-
-const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, isLoading }) => {
-  const [message, setMessage] = useState('');
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (message.trim()) {
-      onSendMessage(message);
-      setMessage('');
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="flex items-center space-x-2">
-      <Input
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        placeholder="Type your message..."
-        disabled={isLoading}
-      />
-      <Button type="submit" size="icon" disabled={isLoading || !message.trim()}>
-        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-      </Button>
-    </form>
-  );
-};
-
-interface ConversationItemProps {
-  conversation: {
-    id: string;
-    otherUser: {
-      id: string;
-      name: string;
-      avatar?: string;
-    };
-    lastMessage?: string;
-    lastMessageTime?: string;
-    unreadCount?: number;
-  };
-  isActive: boolean;
-  onClick: () => void;
-}
-
-const ConversationItem: React.FC<ConversationItemProps> = ({
-  conversation,
-  isActive,
-  onClick,
-}) => {
-  return (
-    <div
-      className={`flex items-center space-x-3 p-3 rounded-lg cursor-pointer hover:bg-muted ${
-        isActive ? 'bg-muted' : ''
-      }`}
-      onClick={onClick}
-    >
-      <Avatar>
-        <AvatarImage src={conversation.otherUser.avatar} />
-        <AvatarFallback>
-          {conversation.otherUser.name
-            .split(' ')
-            .map((n) => n[0])
-            .join('')
-            .toUpperCase()}
-        </AvatarFallback>
-      </Avatar>
-      <div className="flex-1 min-w-0">
-        <div className="flex justify-between items-center">
-          <p className="font-medium truncate">{conversation.otherUser.name}</p>
-          {conversation.lastMessageTime && (
-            <p className="text-xs text-muted-foreground">
-              {conversation.lastMessageTime}
-            </p>
+          
+          <div className="message-header-actions">
+            <button className="message-header-button">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+              </svg>
+              <span>Video Call</span>
+            </button>
+            
+            <button className="message-header-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        
+        <div className="message-content">
+          {loading && messages.length === 0 ? (
+            <div className="message-loading">
+              <div className="spinner"></div>
+              <p>Loading messages...</p>
+            </div>
+          ) : error && messages.length === 0 ? (
+            <div className="message-error">
+              <p>{error}</p>
+              <button 
+                className="message-retry"
+                onClick={() => fetchMessages(activeConversation.id)}
+              >
+                Try Again
+              </button>
+            </div>
+          ) : messages.length === 0 && activeConversation.id !== 'new' ? (
+            <div className="message-empty">
+              <svg xmlns="http://www.w3.org/2000/svg" className="empty-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+              </svg>
+              <h3>No messages yet</h3>
+              <p>Start the conversation by sending a message below.</p>
+            </div>
+          ) : (
+            <div className="message-list">
+              {messages.map((message, index) => {
+                const isCurrentUser = message.sender_id === userId;
+                const showDate = index === 0 || 
+                  formatDate(messages[index - 1].created_at) !== formatDate(message.created_at);
+                
+                return (
+                  <React.Fragment key={message.id}>
+                    {showDate && (
+                      <div className="message-date">
+                        <span>{formatDate(message.created_at)}</span>
+                      </div>
+                    )}
+                    
+                    <div className={`message-bubble ${isCurrentUser ? 'sent' : 'received'}`}>
+                      {!isCurrentUser && (
+                        <img 
+                          src={otherUser?.profile_image || 'https://randomuser.me/api/portraits/men/32.jpg'} 
+                          alt={otherUser?.name} 
+                          className="message-avatar"
+                        />
+                      )}
+                      
+                      <div className="message-bubble-content">
+                        <div className="message-text">
+                          {message.content}
+                        </div>
+                        <div className="message-time">
+                          {formatTime(message.created_at)}
+                          {isCurrentUser && (
+                            <span className="message-status">
+                              {message.read ? (
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="read-icon">
+                                  <path d="M9.707 7.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L12 8.586l-2.293-2.293z" />
+                                </svg>
+                              ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="sent-icon">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              )}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </React.Fragment>
+                );
+              })}
+              
+              {activeConversation.id === 'new' && (
+                <div className="message-empty">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="empty-icon" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+                  </svg>
+                  <h3>New Conversation</h3>
+                  <p>Start the conversation by sending a message below.</p>
+                </div>
+              )}
+            </div>
           )}
         </div>
-        {conversation.lastMessage && (
-          <p className="text-sm text-muted-foreground truncate">
-            {conversation.lastMessage}
-          </p>
-        )}
-      </div>
-      {conversation.unreadCount && conversation.unreadCount > 0 ? (
-        <div className="bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
-          {conversation.unreadCount}
+        
+        <div className="message-input">
+          <div className="message-input-actions">
+            <button className="message-input-button">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8 4a3 3 0 00-3 3v4a5 5 0 0010 0V7a1 1 0 112 0v4a7 7 0 11-14 0V7a5 5 0 0110 0v4a3 3 0 11-6 0V7a1 1 0 012 0v4a1 1 0 102 0V7a3 3 0 00-3-3z" clipRule="evenodd" />
+              </svg>
+            </button>
+            
+            <button className="message-input-button">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+          
+          <div className="message-input-field">
+            <textarea
+              placeholder="Type a message..."
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendMessage();
+                }
+              }}
+            />
+          </div>
+          
+          <button 
+            className="message-send-button"
+            onClick={handleSendMessage}
+            disabled={sending || !newMessage.trim()}
+          >
+            {sending ? (
+              <div className="spinner small"></div>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+              </svg>
+            )}
+          </button>
         </div>
-      ) : null}
-    </div>
-  );
-};
-
-interface MessagingProps {
-  initialConversationId?: string;
-}
-
-const Messaging: React.FC<MessagingProps> = ({ initialConversationId }) => {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('conversations');
-  const [conversations, setConversations] = useState<any[]>([]);
-  const [activeConversation, setActiveConversation] = useState<string | null>(
-    initialConversationId || null
-  );
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
-  const [isSendingMessage, setIsSendingMessage] = useState(false);
-  const [isLoadingConversations, setIsLoadingConversations] = useState(true);
-
-  // Fetch conversations
-  useEffect(() => {
-    const fetchConversations = async () => {
-      if (!user) return;
-      
-      setIsLoadingConversations(true);
-      
-      try {
-        // This is a placeholder implementation
-        // In a real implementation, we would fetch conversations from Supabase
-        
-        // Mock data for demonstration
-        const mockConversations = [
-          {
-            id: '1',
-            otherUser: {
-              id: 'user-1',
-              name: 'Jane Smith',
-              avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Jane',
-            },
-            lastMessage: 'Looking forward to our session tomorrow!',
-            lastMessageTime: '2:30 PM',
-            unreadCount: 2,
-          },
-          {
-            id: '2',
-            otherUser: {
-              id: 'user-2',
-              name: 'Michael Johnson',
-              avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Michael',
-            },
-            lastMessage: 'Thanks for your advice. It was very helpful.',
-            lastMessageTime: 'Yesterday',
-          },
-          {
-            id: '3',
-            otherUser: {
-              id: 'user-3',
-              name: 'Sarah Williams',
-              avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
-            },
-            lastMessage: 'Can we reschedule our meeting?',
-            lastMessageTime: 'Mon',
-            unreadCount: 1,
-          },
-        ];
-        
-        setConversations(mockConversations);
-        
-        // If there's an initial conversation ID, set it as active
-        if (initialConversationId) {
-          setActiveConversation(initialConversationId);
-          setActiveTab('messages');
-        } else if (mockConversations.length > 0) {
-          // Otherwise, set the first conversation as active
-          setActiveConversation(mockConversations[0].id);
-        }
-      } catch (error) {
-        console.error('Error fetching conversations:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load conversations. Please try again.',
-          variant: 'destructive',
-        });
-      } finally {
-        setIsLoadingConversations(false);
-      }
-    };
-
-    fetchConversations();
-  }, [user, initialConversationId, toast]);
-
-  // Fetch messages for active conversation
-  useEffect(() => {
-    const fetchMessages = async () => {
-      if (!user || !activeConversation) return;
-      
-      setIsLoadingMessages(true);
-      
-      try {
-        // This is a placeholder implementation
-        // In a real implementation, we would fetch messages from Supabase
-        
-        // Mock data for demonstration
-        const mockMessages: Message[] = [
-          {
-            id: '1',
-            sender_id: 'user-1',
-            recipient_id: user.id,
-            booking_id: null,
-            content: 'Hi there! I was wondering if you could help me with my career transition to product management?',
-            is_read: true,
-            created_at: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-            updated_at: new Date(Date.now() - 3600000).toISOString(),
-          },
-          {
-            id: '2',
-            sender_id: user.id,
-            recipient_id: 'user-1',
-            booking_id: null,
-            content: 'Of course! I\'d be happy to help. What specific aspects of product management are you interested in?',
-            is_read: true,
-            created_at: new Date(Date.now() - 3500000).toISOString(),
-            updated_at: new Date(Date.now() - 3500000).toISOString(),
-          },
-          {
-            id: '3',
-            sender_id: 'user-1',
-            recipient_id: user.id,
-            booking_id: null,
-            content: 'I\'m coming from a UX design background, so I\'m particularly interested in how to leverage my design skills in a PM role.',
-            is_read: true,
-            created_at: new Date(Date.now() - 3400000).toISOString(),
-            updated_at: new Date(Date.now() - 3400000).toISOString(),
-          },
-          {
-            id: '4',
-            sender_id: user.id,
-            recipient_id: 'user-1',
-            booking_id: null,
-            content: 'That\'s a great background for PM! Your UX experience will be valuable. Let\'s schedule a session to discuss this in more detail.',
-            is_read: true,
-            created_at: new Date(Date.now() - 3300000).toISOString(),
-            updated_at: new Date(Date.now() - 3300000).toISOString(),
-          },
-          {
-            id: '5',
-            sender_id: 'user-1',
-            recipient_id: user.id,
-            booking_id: null,
-            content: 'That sounds perfect! When are you available next week?',
-            is_read: false,
-            created_at: new Date(Date.now() - 1800000).toISOString(), // 30 minutes ago
-            updated_at: new Date(Date.now() - 1800000).toISOString(),
-          },
-          {
-            id: '6',
-            sender_id: 'user-1',
-            recipient_id: user.id,
-            booking_id: null,
-            content: 'Also, do you have any resources you recommend I review before our session?',
-            is_read: false,
-            created_at: new Date(Date.now() - 1700000).toISOString(),
-            updated_at: new Date(Date.now() - 1700000).toISOString(),
-          },
-        ];
-        
-        setMessages(mockMessages);
-        
-        // Mark messages as read in a real implementation
-        // This would update the unread count in the conversation list
-      } catch (error) {
-        console.error('Error fetching messages:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load messages. Please try again.',
-          variant: 'destructive',
-        });
-      } finally {
-        setIsLoadingMessages(false);
-      }
-    };
-
-    fetchMessages();
-  }, [user, activeConversation, toast]);
-
-  const handleSendMessage = async (content: string) => {
-    if (!user || !activeConversation) return;
-    
-    setIsSendingMessage(true);
-    
-    try {
-      // This is a placeholder implementation
-      // In a real implementation, we would send the message to Supabase
-      
-      // Get the recipient ID from the active conversation
-      const conversation = conversations.find(c => c.id === activeConversation);
-      if (!conversation) throw new Error('Conversation not found');
-      
-      const recipientId = conversation.otherUser.id;
-      
-      // Create a new message object
-      const newMessage: Message = {
-        id: `new-${Date.now()}`,
-        sender_id: user.id,
-        recipient_id: recipientId,
-        booking_id: null,
-        content,
-        is_read: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      
-      // Add the message to the local state
-      setMessages(prev => [...prev, newMessage]);
-      
-      // Update the conversation in the list
-      setConversations(prev => 
-        prev.map(c => 
-          c.id === activeConversation 
-            ? {
-                ...c,
-                lastMessage: content,
-                lastMessageTime: 'Just now',
-              }
-            : c
-        )
-      );
-      
-      // In a real implementation, we would also:
-      // 1. Insert the message into the messages table
-      // 2. Update the conversation's last_message_at
-      // 3. Create a notification for the recipient
-    } catch (error) {
-      console.error('Error sending message:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to send message. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSendingMessage(false);
-    }
-  };
-
-  const handleConversationClick = (conversationId: string) => {
-    setActiveConversation(conversationId);
-    setActiveTab('messages');
+      </div>
+    );
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Messages</CardTitle>
-        <CardDescription>
-          Communicate with your mentors and mentees
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="conversations" className="flex items-center">
-              <Users className="h-4 w-4 mr-2" />
-              Conversations
-            </TabsTrigger>
-            <TabsTrigger value="messages" className="flex items-center" disabled={!activeConversation}>
-              <User className="h-4 w-4 mr-2" />
-              {activeConversation
-                ? conversations.find(c => c.id === activeConversation)?.otherUser.name || 'Messages'
-                : 'Messages'}
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="conversations" className="mt-4">
-            {isLoadingConversations ? (
-              <div className="flex justify-center items-center h-[400px]">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : conversations.length > 0 ? (
-              <ScrollArea className="h-[400px]">
-                <div className="space-y-2">
-                  {conversations.map((conversation) => (
-                    <ConversationItem
-                      key={conversation.id}
-                      conversation={conversation}
-                      isActive={conversation.id === activeConversation}
-                      onClick={() => handleConversationClick(conversation.id)}
-                    />
-                  ))}
-                </div>
-              </ScrollArea>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-[400px] text-center">
-                <Users className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium">No conversations yet</h3>
-                <p className="text-muted-foreground mt-2">
-                  Your conversations with mentors and mentees will appear here.
-                </p>
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="messages" className="mt-4">
-            {activeConversation ? (
-              <>
-                <div className="flex items-center space-x-3 mb-4">
-                  <Avatar>
-                    <AvatarImage
-                      src={
-                        conversations.find(c => c.id === activeConversation)?.otherUser.avatar
-                      }
-                    />
-                    <AvatarFallback>
-                      {conversations
-                        .find(c => c.id === activeConversation)
-                        ?.otherUser.name.split(' ')
-                        .map((n) => n[0])
-                        .join('')
-                        .toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium">
-                      {
-                        conversations.find(c => c.id === activeConversation)?.otherUser.name
-                      }
-                    </p>
-                    <div className="flex items-center text-xs text-muted-foreground">
-                      <Clock className="h-3 w-3 mr-1" />
-                      <span>Last active: Recently</span>
-                    </div>
-                  </div>
-                </div>
-                
-                {isLoadingMessages ? (
-                  <div className="flex justify-center items-center h-[400px]">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  </div>
-                ) : (
-                  <>
-                    <MessageList messages={messages} currentUserId={user?.id || ''} />
-                    <div className="mt-4">
-                      <MessageInput
-                        onSendMessage={handleSendMessage}
-                        isLoading={isSendingMessage}
-                      />
-                    </div>
-                  </>
-                )}
-              </>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-[400px] text-center">
-                <User className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium">No conversation selected</h3>
-                <p className="text-muted-foreground mt-2">
-                  Select a conversation from the list to view messages.
-                </p>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-      <CardFooter className="text-xs text-muted-foreground">
-        Messages are end-to-end encrypted and stored securely.
-      </CardFooter>
-    </Card>
+    <div className="messaging-container">
+      <div className="messaging-sidebar">
+        <div className="messaging-header">
+          <h2 className="messaging-title">Messages</h2>
+          <button className="messaging-new-button">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+        
+        <div className="messaging-search">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="search-icon">
+            <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+          </svg>
+          <input 
+            type="text" 
+            placeholder="Search messages..." 
+            className="messaging-search-input"
+          />
+        </div>
+        
+        {renderConversationList()}
+      </div>
+      
+      {renderMessageArea()}
+    </div>
   );
 };
 

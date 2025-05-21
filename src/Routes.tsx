@@ -1,0 +1,63 @@
+import React from 'react';
+import { Routes as RouterRoutes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+
+// Import pages
+const Booking = React.lazy(() => import('@/pages/Booking'));
+const Payment = React.lazy(() => import('@/pages/Payment'));
+const MessagingPage = React.lazy(() => import('@/pages/MessagingPage'));
+const VideoSessionPage = React.lazy(() => import('@/pages/VideoSessionPage'));
+const MentorProfile = React.lazy(() => import('@/pages/MentorProfile'));
+const MenteeProfile = React.lazy(() => import('@/pages/MenteeProfile'));
+
+// Loading component
+const LoadingFallback = () => (
+  <div className="loading-fallback">
+    <div className="spinner"></div>
+    <p>Loading...</p>
+  </div>
+);
+
+const Routes: React.FC = () => {
+  const { user } = useAuth();
+  
+  return (
+    <React.Suspense fallback={<LoadingFallback />}>
+      <RouterRoutes>
+        {/* Public routes */}
+        <Route path="/" element={<Navigate to="/find-a-mentor" />} />
+        
+        {/* Protected routes */}
+        <Route 
+          path="/booking/:mentorId" 
+          element={user ? <Booking /> : <Navigate to="/auth" />} 
+        />
+        <Route 
+          path="/payment/:bookingId" 
+          element={user ? <Payment /> : <Navigate to="/auth" />} 
+        />
+        <Route 
+          path="/messaging" 
+          element={user ? <MessagingPage /> : <Navigate to="/auth" />} 
+        />
+        <Route 
+          path="/video-session/:sessionId" 
+          element={user ? <VideoSessionPage /> : <Navigate to="/auth" />} 
+        />
+        <Route 
+          path="/mentor/:mentorId" 
+          element={<MentorProfile />} 
+        />
+        <Route 
+          path="/mentee/:menteeId" 
+          element={user ? <MenteeProfile /> : <Navigate to="/auth" />} 
+        />
+        
+        {/* Fallback route */}
+        <Route path="*" element={<Navigate to="/" />} />
+      </RouterRoutes>
+    </React.Suspense>
+  );
+};
+
+export default Routes;

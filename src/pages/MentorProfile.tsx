@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../integrations/supabase/client';
-import { StarRating } from '../components/reviews/StarRating';
-import { ReviewList } from '../components/reviews/ReviewList';
-import { BookingForm } from '../components/booking/BookingForm';
-import { AvailabilityCalendar } from '../components/booking/AvailabilityCalendar';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { StarRating } from '@/components/reviews/StarRating';
+import { ReviewList } from '@/components/reviews/ReviewList';
+import { BookingForm } from '@/components/booking/BookingForm';
+import { AvailabilityCalendar } from '@/components/booking/AvailabilityCalendar';
 
 // Premium styling imports
 import '../styles/premium-design-system.css';

@@ -1,0 +1,175 @@
+.saved-payment-methods {
+  margin-bottom: 24px;
+}
+
+.saved-payment-methods-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-dark);
+  margin: 0 0 16px 0;
+}
+
+.payment-methods-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.payment-method-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background-color: white;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.payment-method-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.payment-method-card.selected {
+  border-color: var(--color-primary);
+  background-color: rgba(var(--color-primary-rgb), 0.05);
+}
+
+.payment-method-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-brand-icon {
+  width: 32px;
+  height: 20px;
+}
+
+.card-brand-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-dark);
+  text-transform: capitalize;
+}
+
+.card-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.card-number {
+  font-size: 0.875rem;
+  color: var(--color-text-dark);
+}
+
+.card-expiry {
+  font-size: 0.75rem;
+  color: var(--color-text-medium);
+}
+
+.default-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background-color: rgba(var(--color-success-rgb), 0.1);
+  color: var(--color-success);
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 4px;
+  margin-top: 4px;
+  align-self: flex-start;
+}
+
+.payment-method-card-select {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.select-indicator {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.select-indicator.selected {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary);
+}
+
+.check-icon {
+  width: 16px;
+  height: 16px;
+  color: white;
+}
+
+.payment-method-divider {
+  position: relative;
+  text-align: center;
+  margin: 24px 0;
+}
+
+.payment-method-divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: var(--color-border);
+  z-index: 1;
+}
+
+.payment-method-divider span {
+  position: relative;
+  z-index: 2;
+  background-color: white;
+  padding: 0 12px;
+  font-size: 0.75rem;
+  color: var(--color-text-medium);
+}
+
+.saved-payment-methods-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  font-size: 0.875rem;
+  color: var(--color-text-medium);
+}
+
+.spinner-sm {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(var(--color-primary-rgb), 0.2);
+  border-radius: 50%;
+  border-top-color: var(--color-primary);
+  animation: spin 1s linear infinite;
+}
+
+.saved-payment-methods-error {
+  padding: 12px;
+  color: var(--color-error);
+  font-size: 0.875rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

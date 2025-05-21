@@ -412,3 +412,4 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
 };
 
 export default AvailabilityCalendar;
+export { AvailabilityCalendar };

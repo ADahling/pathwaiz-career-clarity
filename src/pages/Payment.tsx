@@ -1,9 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { supabase } from '../../integrations/supabase/client';
-import { useAuth } from '../../contexts/AuthContext';
-import PaymentForm from '../../components/payment/PaymentForm';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import PaymentForm from '@/components/payment/PaymentForm';
+import SubscriptionOptions from '@/components/payment/SubscriptionOptions';
+import PromoCodeInput from '@/components/payment/PromoCodeInput';
 import './Payment.css';
+
+interface SubscriptionOption {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  interval: 'one-time' | 'monthly' | 'yearly';
+  features: string[];
+  popular?: boolean;
+}
 
 const Payment = () => {
   const { bookingId } = useParams();
@@ -15,6 +27,9 @@ const Payment = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [selectedOption, setSelectedOption] = useState<SubscriptionOption | null>(null);
+  const [discount, setDiscount] = useState(0);
+  const [promoApplied, setPromoApplied] = useState(false);
   
   useEffect(() => {
     // Redirect to login if not authenticated
@@ -116,6 +131,45 @@ const Payment = () => {
   const handleCancel = () => {
     navigate(`/booking/${booking?.mentor_id}`);
   };
+
+  const handleSubscriptionSelect = (option: SubscriptionOption) => {
+    setSelectedOption(option);
+  };
+
+  const handleApplyPromoCode = async (code: string): Promise<boolean> => {
+    // In a real implementation, this would validate the promo code with your backend
+    // For this placeholder, we'll simulate a successful promo code application
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // Simulate a valid promo code that gives 15% off
+        if (code.toUpperCase() === 'WELCOME15') {
+          setDiscount(15);
+          setPromoApplied(true);
+          resolve(true);
+        } else {
+          resolve(false);
+        }
+      }, 1000);
+    });
+  };
+
+  const handleRemovePromoCode = () => {
+    setDiscount(0);
+    setPromoApplied(false);
+  };
+  
+  // Calculate final amount based on selected option and discount
+  const calculateFinalAmount = () => {
+    if (!selectedOption) {
+      return mentor?.hourlyRate * 100 || 7500; // Default to hourly rate in cents
+    }
+    
+    const baseAmount = selectedOption.price * 100; // Convert to cents
+    if (discount > 0) {
+      return baseAmount - (baseAmount * discount / 100);
+    }
+    return baseAmount;
+  };
   
   if (loading) {
     return (
@@ -162,9 +216,6 @@ const Payment = () => {
     );
   }
   
-  // Calculate amount in cents
-  const amount = mentor.hourlyRate * 100;
-  
   const formattedDate = new Date(booking.date).toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
@@ -190,56 +241,158 @@ const Payment = () => {
         </div>
       ) : (
         <div className="payment-page-content">
-          <div className="payment-summary">
-            <div className="payment-summary-header">
-              <h2>Booking Summary</h2>
+          <div className="payment-steps">
+            <div className="payment-step active">
+              <div className="step-number">1</div>
+              <div className="step-label">Select Plan</div>
             </div>
-            
-            <div className="payment-mentor-info">
-              <img 
-                src={mentor.profileImage || 'https://randomuser.me/api/portraits/men/32.jpg'} 
-                alt={mentor.name} 
-                className="payment-mentor-image"
-              />
-              <div>
-                <h3 className="payment-mentor-name">{mentor.name}</h3>
-                <p className="payment-session-type">{booking.session_type}</p>
-              </div>
+            <div className="step-connector"></div>
+            <div className={`payment-step ${selectedOption ? 'active' : ''}`}>
+              <div className="step-number">2</div>
+              <div className="step-label">Payment Details</div>
             </div>
-            
-            <div className="payment-details">
-              <div className="payment-detail-item">
-                <span className="payment-detail-label">Date</span>
-                <span className="payment-detail-value">{formattedDate}</span>
-              </div>
-              
-              <div className="payment-detail-item">
-                <span className="payment-detail-label">Time</span>
-                <span className="payment-detail-value">{booking.time}</span>
-              </div>
-              
-              <div className="payment-detail-item">
-                <span className="payment-detail-label">Topic</span>
-                <span className="payment-detail-value">{booking.topic}</span>
-              </div>
-              
-              <div className="payment-detail-item payment-total">
-                <span className="payment-detail-label">Total</span>
-                <span className="payment-detail-value">${mentor.hourlyRate}.00</span>
-              </div>
+            <div className="step-connector"></div>
+            <div className="payment-step">
+              <div className="step-number">3</div>
+              <div className="step-label">Confirmation</div>
             </div>
           </div>
           
-          <div className="payment-form-container">
-            <PaymentForm 
-              bookingId={booking.id}
-              amount={amount}
-              onSuccess={handlePaymentSuccess}
-              onCancel={handleCancel}
-            />
-          </div>
+          {!selectedOption ? (
+            <div className="subscription-section">
+              <SubscriptionOptions 
+                onSelect={handleSubscriptionSelect}
+                selectedOptionId={selectedOption?.id || null}
+              />
+            </div>
+          ) : (
+            <div className="payment-details-section">
+              <div className="payment-summary">
+                <div className="payment-summary-header">
+                  <h2>Booking Summary</h2>
+                  <button 
+                    className="change-plan-button"
+                    onClick={() => setSelectedOption(null)}
+                  >
+                    Change Plan
+                  </button>
+                </div>
+                
+                <div className="payment-mentor-info">
+                  <img 
+                    src={mentor.profileImage || 'https://randomuser.me/api/portraits/men/32.jpg'} 
+                    alt={mentor.name} 
+                    className="payment-mentor-image"
+                  />
+                  <div>
+                    <h3 className="payment-mentor-name">{mentor.name}</h3>
+                    <p className="payment-session-type">{selectedOption.name}</p>
+                  </div>
+                </div>
+                
+                <div className="payment-details">
+                  <div className="payment-detail-item">
+                    <span className="payment-detail-label">Plan</span>
+                    <span className="payment-detail-value">{selectedOption.name}</span>
+                  </div>
+                  
+                  <div className="payment-detail-item">
+                    <span className="payment-detail-label">Billing</span>
+                    <span className="payment-detail-value">
+                      {selectedOption.interval === 'one-time' ? 'One-time payment' : 
+                       selectedOption.interval === 'monthly' ? 'Monthly subscription' : 
+                       'Annual subscription'}
+                    </span>
+                  </div>
+                  
+                  <div className="payment-detail-item">
+                    <span className="payment-detail-label">First Session</span>
+                    <span className="payment-detail-value">{formattedDate}, {booking.time}</span>
+                  </div>
+                  
+                  <div className="payment-detail-item">
+                    <span className="payment-detail-label">Subtotal</span>
+                    <span className="payment-detail-value">${selectedOption.price.toFixed(2)}</span>
+                  </div>
+                  
+                  {promoApplied && (
+                    <div className="payment-detail-item discount-item">
+                      <span className="payment-detail-label">Discount ({discount}%)</span>
+                      <span className="payment-detail-value">-${((selectedOption.price * discount) / 100).toFixed(2)}</span>
+                    </div>
+                  )}
+                  
+                  <div className="payment-detail-item payment-total">
+                    <span className="payment-detail-label">Total</span>
+                    <span className="payment-detail-value">
+                      ${(calculateFinalAmount() / 100).toFixed(2)}
+                      {selectedOption.interval !== 'one-time' && 
+                        <span className="payment-interval">
+                          /{selectedOption.interval === 'monthly' ? 'month' : 'year'}
+                        </span>
+                      }
+                    </span>
+                  </div>
+                </div>
+                
+                <PromoCodeInput 
+                  onApply={handleApplyPromoCode}
+                  onRemove={handleRemovePromoCode}
+                  disabled={paymentSuccess}
+                />
+              </div>
+              
+              <div className="payment-form-container">
+                <PaymentForm 
+                  bookingId={booking.id}
+                  amount={calculateFinalAmount()}
+                  onSuccess={handlePaymentSuccess}
+                  onCancel={() => setSelectedOption(null)}
+                />
+              </div>
+            </div>
+          )}
         </div>
       )}
+      
+      <div className="payment-page-footer">
+        <div className="payment-guarantee">
+          <svg className="guarantee-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          </svg>
+          <div className="guarantee-text">
+            <h3>100% Satisfaction Guarantee</h3>
+            <p>If you're not completely satisfied with your first session, we'll refund your payment in full.</p>
+          </div>
+        </div>
+        
+        <div className="payment-security">
+          <div className="security-badges">
+            <div className="security-badge">
+              <svg className="security-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+              </svg>
+              <span>Secure Checkout</span>
+            </div>
+            <div className="security-badge">
+              <svg className="security-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
+              </svg>
+              <span>Detailed Receipt</span>
+            </div>
+            <div className="security-badge">
+              <svg className="security-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15V9.236a1 1 0 00-1.447-.894l-4 2a1 1 0 00-.553.894V17zM15.211 6.276a1 1 0 000-1.788l-4.764-2.382a1 1 0 00-.894 0L4.789 4.488a1 1 0 000 1.788l4.764 2.382a1 1 0 00.894 0l4.764-2.382zM4.447 8.342A1 1 0 003 9.236V15a1 1 0 00.553.894l4 2A1 1 0 009 17v-5.764a1 1 0 00-.553-.894l-4-2z" />
+              </svg>
+              <span>Data Protection</span>
+            </div>
+          </div>
+          <p className="security-text">
+            Your payment information is encrypted and securely processed by Stripe. We never store your card details.
+          </p>
+        </div>
+      </div>
     </div>
   );
 };

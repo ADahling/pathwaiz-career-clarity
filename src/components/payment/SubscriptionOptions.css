@@ -1,0 +1,191 @@
+.subscription-options {
+  font-family: var(--font-primary);
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.subscription-options-title {
+  font-size: 2rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.subscription-options-subtitle {
+  font-size: 1.125rem;
+  text-align: center;
+  color: var(--color-text-medium);
+  margin-bottom: 40px;
+}
+
+.subscription-options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.subscription-option {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  padding: 32px;
+  transition: all 0.3s ease;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+
+.subscription-option:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.subscription-option.selected {
+  border-color: var(--color-primary);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.subscription-option.popular {
+  transform: scale(1.05);
+  z-index: 1;
+  box-shadow: 0 8px 40px rgba(var(--color-primary-rgb), 0.15);
+}
+
+.subscription-option.popular:hover {
+  transform: scale(1.05) translateY(-5px);
+}
+
+.popular-badge {
+  position: absolute;
+  top: -12px;
+  right: 24px;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(var(--color-primary-rgb), 0.3);
+}
+
+.subscription-option-header {
+  margin-bottom: 24px;
+}
+
+.subscription-option-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: var(--color-text-dark);
+}
+
+.subscription-option-description {
+  font-size: 0.875rem;
+  color: var(--color-text-medium);
+  margin: 0;
+}
+
+.subscription-option-price {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 24px;
+}
+
+.price-amount {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--color-text-dark);
+}
+
+.price-interval {
+  font-size: 1rem;
+  color: var(--color-text-medium);
+  margin-left: 4px;
+}
+
+.subscription-option-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 32px 0;
+  flex-grow: 1;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 0.875rem;
+  color: var(--color-text-dark);
+}
+
+.feature-icon {
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.subscription-option-button {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.subscription-option-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(var(--color-primary-rgb), 0.3);
+}
+
+.subscription-option-button.selected {
+  background: white;
+  color: var(--color-primary);
+  border: 2px solid var(--color-primary);
+}
+
+@media (max-width: 768px) {
+  .subscription-options-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .subscription-option.popular {
+    transform: none;
+    order: -1;
+  }
+  
+  .subscription-option.popular:hover {
+    transform: translateY(-5px);
+  }
+}
+
+/* Animation for selection */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(var(--color-primary-rgb), 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(var(--color-primary-rgb), 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(var(--color-primary-rgb), 0);
+  }
+}
+
+.subscription-option.selected {
+  animation: pulse 1.5s infinite;
+}

@@ -1,0 +1,236 @@
+/* Matching Components Performance Optimizations */
+
+/* Base variables with RGB values for better performance */
+:root {
+  --primary-rgb: 59, 130, 246;
+  --secondary-rgb: 139, 92, 246;
+  --accent-rgb: 249, 115, 22;
+  --destructive-rgb: 239, 68, 68;
+  --foreground-rgb: 15, 23, 42;
+  --muted-rgb: 100, 116, 139;
+  
+  /* Performance optimizations for animations */
+  --transition-fast: 0.2s ease;
+  --transition-medium: 0.3s ease;
+  --transition-slow: 0.5s ease;
+  --transition-bounce: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  
+  /* Hardware acceleration classes */
+  --transform-gpu: translateZ(0);
+}
+
+/* Global performance optimizations */
+.hardware-accelerated {
+  transform: var(--transform-gpu);
+  will-change: transform, opacity;
+}
+
+.reduced-motion {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+
+/* Optimized animations with reduced properties */
+@keyframes optimizedFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes optimizedFadeSlideUp {
+  from { 
+    opacity: 0;
+    transform: translate3d(0, 20px, 0);
+  }
+  to { 
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes optimizedShimmer {
+  0% { transform: translate3d(-100%, 0, 0); }
+  100% { transform: translate3d(100%, 0, 0); }
+}
+
+@keyframes optimizedSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* Optimized loading states */
+.optimized-loading {
+  contain: content;
+  content-visibility: auto;
+}
+
+/* Responsive image optimizations */
+.responsive-image {
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: attr(width) / attr(height);
+}
+
+/* Lazy loading container */
+.lazy-container {
+  min-height: 1px;
+  contain: layout style paint;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .mobile-optimized {
+    contain: content;
+    content-visibility: auto;
+    contain-intrinsic-size: 0 500px;
+  }
+  
+  /* Simplified animations for mobile */
+  .simplified-animation {
+    transition: opacity var(--transition-fast);
+    animation: none !important;
+  }
+}
+
+/* Reduced animation for users with reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Performance monitoring classes */
+.perf-monitor {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 8px;
+  font-size: 12px;
+  z-index: 9999;
+  display: none;
+}
+
+.perf-monitor.visible {
+  display: block;
+}
+
+/* Intersection Observer utility classes */
+.observe-visibility {
+  visibility: hidden;
+}
+
+.is-visible {
+  visibility: visible;
+  animation: optimizedFadeIn var(--transition-medium) forwards;
+}
+
+/* Optimized card rendering */
+.optimized-card {
+  contain: content;
+  content-visibility: auto;
+  contain-intrinsic-size: 0 300px;
+  will-change: transform;
+  transform: var(--transform-gpu);
+}
+
+/* Efficient hover effects */
+.efficient-hover {
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.efficient-hover:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Optimized grid layouts */
+.optimized-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 1.5rem;
+}
+
+/* Efficient loading indicators */
+.efficient-spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid rgba(var(--primary-rgb), 0.1);
+  border-top-color: rgba(var(--primary-rgb), 1);
+  border-radius: 50%;
+  animation: optimizedSpin 1s linear infinite;
+}
+
+/* Optimized tab switching */
+.optimized-tabs {
+  contain: content;
+}
+
+.optimized-tab-content {
+  will-change: opacity, transform;
+  transition: opacity var(--transition-medium), transform var(--transition-medium);
+}
+
+/* Efficient progress bars */
+.efficient-progress {
+  height: 0.5rem;
+  background-color: rgba(var(--primary-rgb), 0.1);
+  border-radius: 0.25rem;
+  overflow: hidden;
+}
+
+.efficient-progress-bar {
+  height: 100%;
+  background-color: rgba(var(--primary-rgb), 1);
+  border-radius: 0.25rem;
+  transition: width var(--transition-medium);
+}
+
+/* Optimized form elements */
+.optimized-input {
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  will-change: border-color, box-shadow;
+}
+
+.optimized-input:focus {
+  border-color: rgba(var(--primary-rgb), 1);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.2);
+  outline: none;
+}
+
+/* Efficient buttons */
+.efficient-button {
+  position: relative;
+  overflow: hidden;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  will-change: transform, box-shadow;
+}
+
+.efficient-button:hover {
+  transform: translateY(-2px);
+}
+
+/* Accessibility improvements */
+.focus-visible:focus-visible {
+  outline: 2px solid rgba(var(--primary-rgb), 1);
+  outline-offset: 2px;
+}
+
+/* Print optimizations */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-only {
+    display: block !important;
+  }
+  
+  * {
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+}

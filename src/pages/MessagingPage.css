@@ -1,0 +1,129 @@
+.messaging-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px 80px;
+}
+
+.messaging-page-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.messaging-page-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.messaging-page-subtitle {
+  font-size: 1.125rem;
+  color: var(--color-text-medium);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.messaging-page-content {
+  margin-bottom: 40px;
+}
+
+.messaging-page-tips {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.tip-card {
+  display: flex;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  padding: 24px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.tip-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.tip-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+  flex-shrink: 0;
+}
+
+.tip-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.tip-content {
+  flex: 1;
+}
+
+.tip-content h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text-dark);
+  margin: 0 0 12px 0;
+}
+
+.tip-content ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.tip-content li {
+  font-size: 0.875rem;
+  color: var(--color-text-medium);
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.tip-content li:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+  .messaging-page {
+    padding: 20px 16px 60px;
+  }
+  
+  .messaging-page-title {
+    font-size: 1.75rem;
+  }
+  
+  .messaging-page-subtitle {
+    font-size: 1rem;
+  }
+  
+  .tip-card {
+    padding: 16px;
+  }
+  
+  .tip-icon {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .tip-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .tip-content h3 {
+    font-size: 1rem;
+  }
+}
