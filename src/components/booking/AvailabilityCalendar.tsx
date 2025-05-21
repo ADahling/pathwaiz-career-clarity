@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { supabase, mockSupabase } from '@/integrations/supabase/client';
+import { enhancedSupabase } from '@/integrations/supabase/mockClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/sonner';
 import './calendar/Calendar.css';
@@ -39,19 +39,37 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({ mentorId, o
         return;
       }
 
-      // Use mockSupabase to fetch data from tables that don't exist yet
-      // These will be replaced by real tables when they are created
-      const availabilityData = [];
-      const exceptionData = [];
-      const bookingData = [];
+      // Fetch availability data
+      const { data: availabilityData, error: availabilityError } = await enhancedSupabase
+        .from('mentor_availability')
+        .select('*')
+        .eq('mentor_id', mentorId);
 
-      // Process mock data (when real tables are created, this will use real data)
-      processData(availabilityData, exceptionData, bookingData);
+      if (availabilityError) throw availabilityError;
+
+      // Fetch exceptions data
+      const { data: exceptionData, error: exceptionError } = await enhancedSupabase
+        .from('availability_exceptions')
+        .select('*')
+        .eq('mentor_id', mentorId);
+
+      if (exceptionError) throw exceptionError;
+
+      // Fetch existing bookings
+      const { data: bookingData, error: bookingError } = await enhancedSupabase
+        .from('bookings')
+        .select('*')
+        .eq('mentor_id', mentorId);
+
+      if (bookingError) throw bookingError;
+
+      // Process data into events
+      setAvailabilities(availabilityData || []);
+      setAvailabilityExceptions(exceptionData || []);
+      setBookings(bookingData || []);
       
-      // Set empty arrays for now
-      setAvailabilities([]);
-      setAvailabilityExceptions([]);
-      setBookings([]);
+      // Convert data to calendar events
+      processData(availabilityData || [], exceptionData || [], bookingData || []);
       
     } catch (err: any) {
       console.error('Error fetching data:', err);
@@ -63,26 +81,37 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({ mentorId, o
   };
 
   const processData = (
-    availabilityData: Availability[],
-    exceptionData: AvailabilityException[],
-    bookingData: Booking[]
+    availabilityData: any[],
+    exceptionData: any[],
+    bookingData: any[]
   ) => {
     const eventsArray: any[] = [];
 
     // Process regular availabilities
     availabilityData.forEach(availability => {
-      const { day_of_week, start_time, end_time } = availability;
-      const day = moment().day(day_of_week).format('YYYY-MM-DD');
-      const start = moment(`${day} ${start_time}`, 'YYYY-MM-DD HH:mm').toDate();
-      const end = moment(`${day} ${end_time}`, 'YYYY-MM-DD HH:mm').toDate();
+      if (!availability.date || !availability.time) return;
+      
+      const dateStr = availability.date;
+      const timeStr = availability.time;
+      
+      // Create a date object from the date and time strings
+      const [hour, minute] = timeStr.split(':').map(Number);
+      const start = new Date(dateStr);
+      start.setHours(hour, minute);
+      
+      // End time is 1 hour after start
+      const end = new Date(start);
+      end.setHours(end.getHours() + 1);
 
-      eventsArray.push({
-        start,
-        end,
-        title: 'Available',
-        allDay: false,
-        resource: { availabilityId: availability.id },
-      });
+      if (availability.available) {
+        eventsArray.push({
+          start,
+          end,
+          title: 'Available',
+          allDay: false,
+          resource: { availabilityId: availability.id }
+        });
+      }
     });
 
     // Process availability exceptions
@@ -90,8 +119,14 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({ mentorId, o
       const { date, is_available, start_time, end_time } = exception;
       if (!start_time || !end_time) return;
       
-      const start = moment(`${date} ${start_time}`, 'YYYY-MM-DD HH:mm').toDate();
-      const end = moment(`${date} ${end_time}`, 'YYYY-MM-DD HH:mm').toDate();
+      const startParts = start_time.split(':').map(Number);
+      const endParts = end_time.split(':').map(Number);
+      
+      const start = new Date(date);
+      start.setHours(startParts[0], startParts[1]);
+      
+      const end = new Date(date);
+      end.setHours(endParts[0], endParts[1]);
 
       if (is_available) {
         eventsArray.push({
@@ -99,30 +134,41 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({ mentorId, o
           end,
           title: 'Available',
           allDay: false,
-          resource: { exceptionId: exception.id },
+          resource: { exceptionId: exception.id }
         });
       } else {
         eventsArray.push({
           start,
           end,
           title: 'Not Available',
-          allDay: true,
-          resource: { exceptionId: exception.id },
+          allDay: false,
+          resource: { exceptionId: exception.id }
         });
       }
     });
 
     // Process bookings to block slots
     bookingData.forEach(booking => {
-      const start = moment(booking.start_time).toDate();
-      const end = moment(booking.end_time).toDate();
+      if (!booking.date || !booking.time) return;
+      
+      const dateStr = booking.date;
+      const timeStr = booking.time;
+      
+      // Create a date object from the date and time strings
+      const [hour, minute] = timeStr.split(':').map(Number);
+      const start = new Date(dateStr);
+      start.setHours(hour, minute);
+      
+      // End time is based on duration (default to 1 hour)
+      const end = new Date(start);
+      end.setMinutes(end.getMinutes() + (booking.duration || 60));
 
       eventsArray.push({
         start,
         end,
         title: 'Booked',
         allDay: false,
-        resource: { bookingId: booking.id },
+        resource: { bookingId: booking.id }
       });
     });
 

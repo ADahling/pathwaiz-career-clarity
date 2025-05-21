@@ -9,6 +9,116 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      availability_exceptions: {
+        Row: {
+          created_at: string
+          date: string
+          end_time: string | null
+          id: string
+          is_available: boolean
+          mentor_id: string
+          start_time: string | null
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          end_time?: string | null
+          id?: string
+          is_available?: boolean
+          mentor_id: string
+          start_time?: string | null
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          end_time?: string | null
+          id?: string
+          is_available?: boolean
+          mentor_id?: string
+          start_time?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "availability_exceptions_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bookings: {
+        Row: {
+          created_at: string
+          date: string
+          duration: number
+          id: string
+          mentee_id: string
+          mentor_id: string
+          mentor_share: number
+          notes: string | null
+          payment_status: string
+          platform_fee: number
+          price: number
+          session_type: string
+          status: string
+          time: string
+          topic: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          duration: number
+          id?: string
+          mentee_id: string
+          mentor_id: string
+          mentor_share: number
+          notes?: string | null
+          payment_status?: string
+          platform_fee: number
+          price: number
+          session_type: string
+          status?: string
+          time: string
+          topic: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          duration?: number
+          id?: string
+          mentee_id?: string
+          mentor_id?: string
+          mentor_share?: number
+          notes?: string | null
+          payment_status?: string
+          platform_fee?: number
+          price?: number
+          session_type?: string
+          status?: string
+          time?: string
+          topic?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_mentee_id_fkey"
+            columns: ["mentee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mentee_profiles: {
         Row: {
           career_goals: string | null
@@ -42,6 +152,44 @@ export type Database = {
             foreignKeyName: "mentee_profiles_id_fkey"
             columns: ["id"]
             isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mentor_availability: {
+        Row: {
+          available: boolean
+          created_at: string
+          date: string
+          id: string
+          mentor_id: string
+          time: string
+          updated_at: string
+        }
+        Insert: {
+          available?: boolean
+          created_at?: string
+          date: string
+          id?: string
+          mentor_id: string
+          time: string
+          updated_at?: string
+        }
+        Update: {
+          available?: boolean
+          created_at?: string
+          date?: string
+          id?: string
+          mentor_id?: string
+          time?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentor_availability_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },

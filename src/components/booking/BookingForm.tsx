@@ -1,6 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { enhancedSupabase } from '@/integrations/supabase/mockClient';
 import Calendar from '@/components/booking/calendar/Calendar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useError } from '@/contexts/ErrorContext';
@@ -147,7 +149,7 @@ const BookingForm: React.FC<BookingFormProps> = ({ mentor, onClose }) => {
       const platformFee = sessionPrice * 0.2;
       
       // Create booking in Supabase
-      const { data, error: bookingError } = await supabase
+      const { data, error: bookingError } = await enhancedSupabase
         .from('bookings')
         .insert([
           {
@@ -172,7 +174,7 @@ const BookingForm: React.FC<BookingFormProps> = ({ mentor, onClose }) => {
       if (bookingError) throw bookingError;
 
       // Update availability to mark the slot as unavailable
-      const { error: availabilityError } = await supabase
+      const { error: availabilityError } = await enhancedSupabase
         .from('mentor_availability')
         .update({ available: false })
         .match({ 

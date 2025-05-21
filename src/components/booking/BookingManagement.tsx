@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { enhancedSupabase } from '@/integrations/supabase/mockClient';
 import './BookingManagement.css';
 
 interface BookingManagementProps {
@@ -24,7 +25,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ userId, userType 
 
       const userIdField = userType === 'mentor' ? 'mentor_id' : 'mentee_id';
       
-      let query = supabase
+      let query = enhancedSupabase
         .from('bookings')
         .select(`
           *,
@@ -69,7 +70,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ userId, userType 
     try {
       setLoading(true);
       
-      const { error } = await supabase
+      const { error } = await enhancedSupabase
         .from('bookings')
         .update({ status: newStatus })
         .eq('id', bookingId);

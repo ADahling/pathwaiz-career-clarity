@@ -1,20 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { useNavigate, useParams } from 'react-router-dom';
+import { enhancedSupabase } from '@/integrations/supabase/mockClient';
 import { useAuth } from '@/contexts/AuthContext';
 import BookingForm from '@/components/booking/BookingForm';
 import './Booking.css';
 
 const Booking = () => {
+  const { mentorId } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
   
   const [mentor, setMentor] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
-  // Get mentor ID from URL
-  const mentorId = window.location.pathname.split('/').pop();
   
   useEffect(() => {
     // Redirect to login if not authenticated
@@ -28,8 +26,8 @@ const Booking = () => {
         setLoading(true);
         
         // Fetch mentor data from Supabase
-        const { data, error } = await supabase
-          .from('mentors')
+        const { data, error } = await enhancedSupabase
+          .from('mentor_profiles')
           .select('*, profiles(*)')
           .eq('id', mentorId)
           .single();
@@ -119,13 +117,13 @@ const Booking = () => {
       <div className="booking-page-header">
         <div className="booking-page-mentor-info">
           <img 
-            src={mentor.profileImage || 'https://randomuser.me/api/portraits/men/32.jpg'} 
-            alt={mentor.name} 
+            src={mentor?.profileImage || 'https://randomuser.me/api/portraits/men/32.jpg'} 
+            alt={mentor?.name} 
             className="booking-page-mentor-image"
           />
           <div>
-            <h1 className="booking-page-title">Book a Session with {mentor.name}</h1>
-            <p className="booking-page-subtitle">{mentor.title} at {mentor.company}</p>
+            <h1 className="booking-page-title">Book a Session with {mentor?.name}</h1>
+            <p className="booking-page-subtitle">{mentor?.title} at {mentor?.company}</p>
           </div>
         </div>
         <button 

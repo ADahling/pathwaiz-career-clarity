@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { enhancedSupabase } from '@/integrations/supabase/mockClient';
 import { useAuth } from '@/contexts/AuthContext';
 import PaymentForm from '@/components/payment/PaymentForm';
 import SubscriptionOptions from '@/components/payment/SubscriptionOptions';
@@ -47,16 +47,16 @@ const Payment = () => {
         }
         
         // Fetch booking data from Supabase
-        const { data: bookingData, error: bookingError } = await supabase
+        const { data: bookingData, error: bookingError } = await enhancedSupabase
           .from('bookings')
           .select(`
             *,
             mentors:mentor_id (
               id, 
               hourly_rate,
-              profiles:profile_id (
-                full_name, 
-                avatar_url
+              profiles:id (
+                role,
+                id
               )
             )
           `)
@@ -82,8 +82,8 @@ const Payment = () => {
               id: 'mentor-1',
               hourly_rate: 75,
               profiles: {
-                full_name: 'Alex Johnson',
-                avatar_url: 'https://randomuser.me/api/portraits/men/32.jpg'
+                role: 'mentor',
+                id: 'mentor-1'
               }
             }
           };
@@ -101,9 +101,9 @@ const Payment = () => {
           // Extract mentor info
           const mentorInfo = {
             id: bookingData.mentors.id,
-            name: bookingData.mentors.profiles.full_name,
+            name: 'Mentor Name', // We don't have name in the data yet
             hourlyRate: bookingData.mentors.hourly_rate || 75,
-            profileImage: bookingData.mentors.profiles.avatar_url
+            profileImage: 'https://randomuser.me/api/portraits/men/32.jpg' // Placeholder
           };
           
           setMentor(mentorInfo);
