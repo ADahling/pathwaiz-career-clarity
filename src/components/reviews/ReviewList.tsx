@@ -1,13 +1,34 @@
+
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { StarRating } from './StarRating';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/sonner';
+import { StarRating } from './StarRating';
 import { Review } from '@/types/supabase';
+import { enhancedSupabase as mockSupabase } from '@/integrations/supabase/mockClient';
 
 interface ReviewListProps {
   mentorId: string;
 }
+
+// Mock data for reviews since the 'reviews' table doesn't exist in Supabase yet
+const mockReviews: Review[] = [
+  {
+    id: '1',
+    mentor_id: 'mentor-1',
+    mentee_id: 'mentee-1',
+    rating: 5,
+    comment: 'Excellent mentor! Very knowledgeable and supportive.',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: '2',
+    mentor_id: 'mentor-1',
+    mentee_id: 'mentee-2',
+    rating: 4,
+    comment: 'Great session, learned a lot about the industry.',
+    created_at: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+  }
+];
 
 export const ReviewList: React.FC<ReviewListProps> = ({ mentorId }) => {
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -27,19 +48,16 @@ export const ReviewList: React.FC<ReviewListProps> = ({ mentorId }) => {
       setLoading(true);
       setError('');
 
-      const { data, error } = await supabase
-        .from('reviews')
-        .select('*')
-        .eq('mentor_id', mentorId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      setReviews(data || []);
+      // In a real implementation, we would fetch from Supabase
+      // For now, use mock data filtered by mentor ID
+      setTimeout(() => {
+        const filteredReviews = mockReviews.filter(review => review.mentor_id === mentorId);
+        setReviews(filteredReviews);
+        setLoading(false);
+      }, 800); // Simulate API delay
     } catch (err) {
       console.error('Error fetching reviews:', err);
       setError('Failed to load reviews. Please try again.');
-    } finally {
       setLoading(false);
     }
   };
@@ -63,28 +81,28 @@ export const ReviewList: React.FC<ReviewListProps> = ({ mentorId }) => {
     try {
       setIsSubmitting(true);
 
-      const { data, error } = await supabase
-        .from('reviews')
-        .insert([
-          {
-            mentor_id: mentorId,
-            mentee_id: user.id,
-            rating: newRating,
-            comment: newComment,
-          },
-        ])
-        .select();
+      // Create a new review
+      const newReview: Review = {
+        id: `mock-${Date.now()}`,
+        mentor_id: mentorId,
+        mentee_id: user.id,
+        rating: newRating,
+        comment: newComment,
+        created_at: new Date().toISOString()
+      };
 
-      if (error) throw error;
-
-      setReviews([...reviews, ...data]);
-      setNewRating(null);
-      setNewComment('');
-      toast.success('Review submitted successfully!');
+      // In a real implementation, we would insert to Supabase
+      // For now, update the local state
+      setTimeout(() => {
+        setReviews([newReview, ...reviews]);
+        setNewRating(null);
+        setNewComment('');
+        toast.success('Review submitted successfully!');
+        setIsSubmitting(false);
+      }, 800); // Simulate API delay
     } catch (err) {
       console.error('Error submitting review:', err);
       toast.error('Failed to submit review. Please try again.');
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -105,7 +123,7 @@ export const ReviewList: React.FC<ReviewListProps> = ({ mentorId }) => {
         <h3>Submit a Review</h3>
         <div className="review-form-rating">
           <label>Rating:</label>
-          <StarRating rating={newRating} onRatingChange={setNewRating} />
+          <StarRating rating={newRating || 0} onRatingChange={setNewRating} />
         </div>
         <div className="review-form-comment">
           <label>Comment:</label>

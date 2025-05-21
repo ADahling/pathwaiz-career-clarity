@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { useError } from '@/contexts/ErrorContext';
 import { ErrorType, createError, ErrorSeverity } from '@/services/errorService';
@@ -27,7 +28,7 @@ export function useApi<T = any>() {
       const data = await apiCall();
       setState({ data, loading: false, error: null });
       return { data, error: null };
-    } catch (error) {
+    } catch (error: any) {
       const appError = captureError(error);
       setState({ data: null, loading: false, error: appError });
       return { data: null, error: appError };
