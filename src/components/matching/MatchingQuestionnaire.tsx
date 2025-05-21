@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useErrorContext } from '@/contexts/ErrorContext';
+import { useError } from '@/contexts/ErrorContext';
 import { useNavigate } from 'react-router-dom';
 import './MatchingQuestionnaire.css';
 
@@ -20,7 +20,7 @@ interface MatchingQuestionnaireProps {
 
 export const MatchingQuestionnaire: React.FC<MatchingQuestionnaireProps> = ({ onComplete }) => {
   const { user } = useAuth();
-  const { handleError } = useErrorContext();
+  const { handleError } = useError();
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -285,33 +285,32 @@ export const MatchingQuestionnaire: React.FC<MatchingQuestionnaireProps> = ({ on
     setLoading(true);
 
     try {
-      // Save questionnaire answers to Supabase
-      const { error } = await supabase
-        .from('mentee_preferences')
-        .upsert({
-          user_id: user.id,
-          communication_preferences: {
-            style: answers.communicationStyle,
-            feedback: answers.feedbackPreference,
-            meeting_frequency: answers.meetingFrequency,
-            response_time: answers.responseTimeExpectation
-          },
-          mentorship_preferences: {
-            approach: answers.mentorshipApproach,
-            guidance_level: answers.guidanceLevel,
-            learning_style: answers.learningStyle,
-            goal_orientation: answers.goalOrientation
-          },
-          career_preferences: {
-            stage: answers.careerStage,
-            industry_interests: answers.industryInterests,
-            skills_to_improve: answers.skillsToImprove,
-            goals: answers.careerGoals
-          },
-          updated_at: new Date().toISOString()
-        });
-
-      if (error) throw error;
+      // For now, we'll just mock the API call since mentee_preferences table doesn't exist yet
+      // We'll modify this to use localStorage instead
+      
+      // Store preferences in localStorage
+      localStorage.setItem('mentee_preferences', JSON.stringify({
+        user_id: user.id,
+        communication_preferences: {
+          style: answers.communicationStyle,
+          feedback: answers.feedbackPreference,
+          meeting_frequency: answers.meetingFrequency,
+          response_time: answers.responseTimeExpectation
+        },
+        mentorship_preferences: {
+          approach: answers.mentorshipApproach,
+          guidance_level: answers.guidanceLevel,
+          learning_style: answers.learningStyle,
+          goal_orientation: answers.goalOrientation
+        },
+        career_preferences: {
+          stage: answers.careerStage,
+          industry_interests: answers.industryInterests,
+          skills_to_improve: answers.skillsToImprove,
+          goals: answers.careerGoals
+        },
+        updated_at: new Date().toISOString()
+      }));
 
       toast({
         title: "Preferences Saved",

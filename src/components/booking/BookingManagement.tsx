@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { enhancedSupabase } from '@/integrations/supabase/mockClient';
 import './BookingManagement.css';
+import { Booking } from '@/types/supabase';
 
 interface BookingManagementProps {
   userId: string;
@@ -25,40 +26,40 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ userId, userType 
 
       const userIdField = userType === 'mentor' ? 'mentor_id' : 'mentee_id';
       
-      let query = enhancedSupabase
+      // Basic query
+      const query = enhancedSupabase
         .from('bookings')
-        .select(`
-          *,
-          mentors:mentor_id(*),
-          mentees:mentee_id(*)
-        `)
-        .eq(userIdField, userId);
-
-      // Filter by status based on active tab
+        .select('*');
+      
+      // Apply filters manually after getting the data
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      
+      let filteredData = (data || []) as Booking[];
+      
+      // Filter by user ID
+      filteredData = filteredData.filter(booking => booking[userIdField as keyof Booking] === userId);
+      
+      // Apply tab-specific filtering
       if (activeTab === 'upcoming') {
         const today = new Date().toISOString().split('T')[0];
-        query = query
-          .eq('status', 'confirmed')
-          .gte('date', today)
-          .order('date', { ascending: true });
+        filteredData = filteredData.filter(
+          booking => booking.status === 'confirmed' && booking.date >= today
+        ).sort((a, b) => a.date.localeCompare(b.date));
       } else if (activeTab === 'past') {
         const today = new Date().toISOString().split('T')[0];
-        query = query
-          .eq('status', 'completed')
-          .lt('date', today)
-          .order('date', { ascending: false });
+        filteredData = filteredData.filter(
+          booking => booking.status === 'completed' && booking.date < today
+        ).sort((a, b) => b.date.localeCompare(a.date));
       } else if (activeTab === 'pending') {
-        query = query
-          .eq('status', 'pending')
-          .order('date', { ascending: true });
+        filteredData = filteredData.filter(
+          booking => booking.status === 'pending'
+        ).sort((a, b) => a.date.localeCompare(b.date));
       }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      setBookings(data || []);
-    } catch (err) {
+      
+      setBookings(filteredData);
+    } catch (err: any) {
       console.error('Error fetching bookings:', err);
       setError('Failed to load bookings. Please try again.');
     } finally {
@@ -79,7 +80,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ userId, userType 
 
       // Refresh bookings
       fetchBookings();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error updating booking status:', err);
       setError('Failed to update booking status. Please try again.');
     } finally {

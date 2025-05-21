@@ -64,12 +64,16 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({ mentorId, o
       if (bookingError) throw bookingError;
 
       // Process data into events
-      setAvailabilities(availabilityData || []);
-      setAvailabilityExceptions(exceptionData || []);
-      setBookings(bookingData || []);
+      setAvailabilities(availabilityData as Availability[] || []);
+      setAvailabilityExceptions(exceptionData as AvailabilityException[] || []);
+      setBookings(bookingData as Booking[] || []);
       
       // Convert data to calendar events
-      processData(availabilityData || [], exceptionData || [], bookingData || []);
+      processData(
+        availabilityData as Availability[] || [], 
+        exceptionData as AvailabilityException[] || [], 
+        bookingData as Booking[] || []
+      );
       
     } catch (err: any) {
       console.error('Error fetching data:', err);
@@ -81,9 +85,9 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({ mentorId, o
   };
 
   const processData = (
-    availabilityData: any[],
-    exceptionData: any[],
-    bookingData: any[]
+    availabilityData: Availability[],
+    exceptionData: AvailabilityException[],
+    bookingData: Booking[]
   ) => {
     const eventsArray: any[] = [];
 
