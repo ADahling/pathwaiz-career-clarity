@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import StarRating from './StarRating';
+import { StarRating } from './StarRating';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/sonner';
 import { Review } from '@/types/supabase';
@@ -156,7 +157,7 @@ const ReviewList: React.FC<ReviewListProps> = ({ mentorId }) => {
           {reviews.map((review) => (
             <div className="review-item" key={review.id}>
               <div className="review-header">
-                <StarRating rating={review.rating} />
+                <StarRating rating={review.rating} readOnly />
                 <span className="review-date">
                   {new Date(review.created_at).toLocaleDateString()}
                 </span>

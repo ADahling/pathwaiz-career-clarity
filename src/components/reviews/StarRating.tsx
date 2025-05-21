@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Star } from 'lucide-react';
 
@@ -45,3 +46,6 @@ export const StarRating: React.FC<StarRatingProps> = ({
     </div>
   );
 };
+
+// Add default export so component can be imported both ways
+export default StarRating;
