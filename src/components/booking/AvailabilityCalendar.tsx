@@ -24,7 +24,7 @@ interface CalendarEvent {
   resource: any;
 }
 
-const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({ mentorId, onBook }) => {
+export const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({ mentorId, onBook }) => {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [availabilities, setAvailabilities] = useState<Availability[]>([]);
   const [availabilityExceptions, setAvailabilityExceptions] = useState<AvailabilityException[]>([]);
@@ -73,15 +73,15 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({ mentorId, o
 
       // Process data into events
       if (availabilityData) {
-        setAvailabilities(availabilityData as unknown as Availability[]);
+        setAvailabilities(availabilityData as Availability[]);
       }
       
       if (exceptionData) {
-        setAvailabilityExceptions(exceptionData as unknown as AvailabilityException[]);
+        setAvailabilityExceptions(exceptionData as AvailabilityException[]);
       }
       
       if (bookingData) {
-        setBookings(bookingData as unknown as Booking[]);
+        setBookings(bookingData as Booking[]);
       }
       
       // Convert data to calendar events
@@ -244,4 +244,5 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({ mentorId, o
   );
 };
 
+// Add default export to support both named and default imports
 export default AvailabilityCalendar;
