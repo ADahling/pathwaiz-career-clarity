@@ -1,86 +1,33 @@
-
 import React from 'react';
-import { Routes as RouterRoutes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { Layout } from '@/components/Layout';
-import ProtectedRoute from '@/components/ProtectedRoute';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import Index from '@/pages/Index';
+import Auth from '@/pages/Auth';
+import FindAMentor from '@/pages/FindAMentor';
+import HowItWorks from '@/pages/HowItWorks';
+import Pricing from '@/pages/Pricing';
+import Booking from '@/pages/Booking';
+import Onboarding from '@/pages/Onboarding';
+import MenteeProfile from '@/pages/MenteeProfile';
+import MentorProfile from '@/pages/MentorProfile';
+import ApiKeyManager from '@/components/admin/ApiKeyManager';
 
-// Import pages
-const Booking = React.lazy(() => import('@/pages/Booking'));
-const Payment = React.lazy(() => import('@/pages/Payment'));
-const MessagingPage = React.lazy(() => import('@/pages/MessagingPage'));
-const VideoSessionPage = React.lazy(() => import('@/pages/VideoSessionPage'));
-const MentorProfile = React.lazy(() => import('@/pages/MentorProfile'));
-const MenteeProfile = React.lazy(() => import('@/pages/MenteeProfile'));
-
-// Loading component
-const LoadingFallback = () => (
-  <div className="loading-fallback">
-    <div className="spinner"></div>
-    <p>Loading...</p>
-  </div>
-);
-
-const Routes: React.FC = () => {
-  const { user } = useAuth();
-  
+const AppRoutes: React.FC = () => {
   return (
-    <React.Suspense fallback={<LoadingFallback />}>
-      <RouterRoutes>
-        {/* Public routes */}
-        <Route path="/" element={<Navigate to="/find-a-mentor" />} />
-        
-        {/* Protected routes */}
-        <Route 
-          path="/booking/:mentorId" 
-          element={
-            <ProtectedRoute>
-              <Booking />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/payment/:bookingId" 
-          element={
-            <ProtectedRoute>
-              <Payment />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/messaging" 
-          element={
-            <ProtectedRoute>
-              <MessagingPage />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/video-session/:sessionId" 
-          element={
-            <ProtectedRoute>
-              <VideoSessionPage />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/mentor/:mentorId" 
-          element={<MentorProfile />} 
-        />
-        <Route 
-          path="/mentee/:menteeId" 
-          element={
-            <ProtectedRoute>
-              <MenteeProfile />
-            </ProtectedRoute>
-          } 
-        />
-        
-        {/* Fallback route */}
-        <Route path="*" element={<Navigate to="/" />} />
-      </RouterRoutes>
-    </React.Suspense>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/find-a-mentor" element={<FindAMentor />} />
+        <Route path="/how-it-works" element={<HowItWorks />} />
+        <Route path="/pricing" element={<Pricing />} />
+        <Route path="/booking/:mentorId" element={<Booking />} />
+        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/mentee-profile" element={<MenteeProfile />} />
+        <Route path="/mentor-profile" element={<MentorProfile />} />
+        <Route path="/admin/api-keys" element={<ApiKeyManager />} />
+      </Routes>
+    </Router>
   );
 };
 
-export default Routes;
+export default AppRoutes;
