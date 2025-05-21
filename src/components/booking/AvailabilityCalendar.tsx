@@ -16,8 +16,16 @@ interface AvailabilityCalendarProps {
   onBook: (startTime: string, endTime: string) => void;
 }
 
+interface CalendarEvent {
+  start: Date;
+  end: Date;
+  title: string;
+  allDay: boolean;
+  resource: any;
+}
+
 const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({ mentorId, onBook }) => {
-  const [events, setEvents] = useState<any[]>([]);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [availabilities, setAvailabilities] = useState<Availability[]>([]);
   const [availabilityExceptions, setAvailabilityExceptions] = useState<AvailabilityException[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -89,7 +97,7 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({ mentorId, o
     exceptionData: AvailabilityException[],
     bookingData: Booking[]
   ) => {
-    const eventsArray: any[] = [];
+    const eventsArray: CalendarEvent[] = [];
 
     // Process regular availabilities
     availabilityData.forEach(availability => {

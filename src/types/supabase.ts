@@ -4,9 +4,9 @@
 export interface Availability {
   id: string;
   mentor_id: string;
-  date: string;  // Changed from day_of_week to match the schema
-  time: string;  // Added to match the schema
-  available: boolean; // Added to match the schema
+  date: string;  // Database field
+  time: string;  // Database field
+  available: boolean; // Database field
   created_at: string;
   updated_at?: string;
 }

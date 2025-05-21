@@ -15,3 +15,4 @@ export const ErrorContext = createContext<ErrorContextType>(defaultErrorContext)
 
 export const useError = () => useContext(ErrorContext);
 export const useErrorContext = useError; // Alias for backward compatibility
+export { ErrorProvider } from './ErrorContext.tsx'; // Export ErrorProvider from the implementation file

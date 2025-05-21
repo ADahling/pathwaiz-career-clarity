@@ -1,15 +1,24 @@
+
 import React, { useEffect, useState } from 'react';
 import { enhancedSupabase } from '@/integrations/supabase/mockClient';
 import { useAuth } from '@/contexts/AuthContext';
-import { useError } from '@/contexts/ErrorContext'; // Fixed import
+import { useError } from '@/contexts/ErrorContext'; 
 import { toast } from '@/components/ui/sonner';
-import { MatchingService } from '@/services/MatchingService';
+import matchingService from '@/services/MatchingService';
 import './MentorMatching.css';
+import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { StarRating } from '@/components/reviews/StarRating';
+import MatchingQuestionnaire from '@/components/matching/MatchingQuestionnaire';
 
 export const MentorMatching: React.FC = () => {
   const { user } = useAuth();
   const { handleError } = useError();
-  const { toast } = useToast();
   const navigate = useNavigate();
   
   const [activeTab, setActiveTab] = useState('questionnaire');
@@ -30,7 +39,7 @@ export const MentorMatching: React.FC = () => {
     if (!user) return;
     
     try {
-      const userPreferences = await MatchingService.fetchUserPreferences(user.id);
+      const userPreferences = await matchingService.fetchUserPreferences(user.id);
       setPreferences(userPreferences);
       setHasCompletedQuestionnaire(!!userPreferences);
       
@@ -44,7 +53,7 @@ export const MentorMatching: React.FC = () => {
   
   const fetchMentors = async () => {
     try {
-      const mentorData = await MatchingService.fetchMentors();
+      const mentorData = await matchingService.fetchMentors();
       setMentors(mentorData);
     } catch (error) {
       handleError(error, "Failed to fetch mentors");
@@ -67,12 +76,12 @@ export const MentorMatching: React.FC = () => {
       // Fetch all mentors if not already loaded
       let mentorData = mentors;
       if (mentorData.length === 0) {
-        mentorData = await MatchingService.fetchMentors();
+        mentorData = await matchingService.fetchMentors();
         setMentors(mentorData);
       }
       
       // Fetch updated preferences
-      const userPreferences = await MatchingService.fetchUserPreferences(user.id);
+      const userPreferences = await matchingService.fetchUserPreferences(user.id);
       setPreferences(userPreferences);
       
       if (!userPreferences) {
@@ -80,11 +89,11 @@ export const MentorMatching: React.FC = () => {
       }
       
       // Generate AI recommendations
-      const matches = await MatchingService.generateAIRecommendations(mentorData, userPreferences);
+      const matches = await matchingService.generateAIRecommendations(mentorData, userPreferences);
       setMatchedMentors(matches);
       
       // Save matches to database
-      await MatchingService.saveMentorMatches(user.id, matches);
+      await matchingService.saveMentorMatches(user.id, matches);
       
       setHasCompletedQuestionnaire(true);
       setActiveTab('results');
@@ -143,7 +152,7 @@ export const MentorMatching: React.FC = () => {
     
     return (
       <div className="mentor-matches">
-        {matchedMentors.map((mentor) => (
+        {matchedMentors.map((mentor: any) => (
           <Card key={mentor.id} className="mentor-card">
             <CardContent className="p-6">
               <div className="flex items-start gap-4">
@@ -173,14 +182,14 @@ export const MentorMatching: React.FC = () => {
                   <div className="mt-3">
                     <h4 className="text-sm font-medium mb-1">Why you'll match:</h4>
                     <ul className="match-reasons">
-                      {mentor.match_reasons?.map((reason, index) => (
+                      {mentor.match_reasons?.map((reason: string, index: number) => (
                         <li key={index} className="text-sm">{reason}</li>
                       ))}
                     </ul>
                   </div>
                   
                   <div className="flex flex-wrap gap-2 mt-3">
-                    {mentor.expertise.slice(0, 3).map((skill, index) => (
+                    {mentor.expertise.slice(0, 3).map((skill: string, index: number) => (
                       <Badge key={index} variant="outline">{skill}</Badge>
                     ))}
                     {mentor.expertise.length > 3 && (

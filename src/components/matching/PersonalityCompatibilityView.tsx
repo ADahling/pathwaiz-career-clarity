@@ -1,7 +1,8 @@
+
 import React, { useEffect, useState } from 'react';
 import { enhancedSupabase } from '@/integrations/supabase/mockClient';
 import { useAuth } from '@/contexts/AuthContext';
-import { useError } from '@/contexts/ErrorContext'; // Fixed import
+import { useError } from '@/contexts/ErrorContext';
 import { toast } from '@/components/ui/sonner';
 import './PersonalityCompatibilityView.css';
 
@@ -89,20 +90,20 @@ const PersonalityCompatibilityView: React.FC<PersonalityCompatibilityViewProps> 
     return 'var(--error)';
   };
 
-  // In the formatAreaName function that was previously using a private method, we'll implement it directly
-const formatAreaName = (areaKey: string): string => {
-  const formattedNames: Record<string, string> = {
-    'collaborationStyle': 'Collaboration Style',
-    'communicationPreference': 'Communication',
-    'feedbackStyle': 'Feedback Style',
-    'problemSolvingApproach': 'Problem Solving',
-    'workLifeBalance': 'Work-Life Balance',
-    'careerValues': 'Career Values',
-    'learningStyle': 'Learning Style'
+  // Format area name helper function
+  const formatAreaName = (areaKey: string): string => {
+    const formattedNames: Record<string, string> = {
+      'collaborationStyle': 'Collaboration Style',
+      'communicationPreference': 'Communication',
+      'feedbackStyle': 'Feedback Style',
+      'problemSolvingApproach': 'Problem Solving',
+      'workLifeBalance': 'Work-Life Balance',
+      'careerValues': 'Career Values',
+      'learningStyle': 'Learning Style'
+    };
+    
+    return formattedNames[areaKey] || areaKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
   };
-  
-  return formattedNames[areaKey] || areaKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-};
 
   if (loading) {
     return <div className="loading-message">Loading compatibility data...</div>;
