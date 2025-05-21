@@ -1,8 +1,9 @@
+
 import React from 'react';
 import { Search, Calendar, Lightbulb, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import Layout from '@/components/Layout';
+import { Layout } from '@/components/Layout';
 
 const HowItWorksPage: React.FC = () => {
   const steps = [

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { NavBar } from './NavBar';
@@ -14,3 +15,6 @@ export const Layout: React.FC<React.PropsWithChildren> = ({ children }) => {
     </div>
   );
 };
+
+// Add default export for easier imports
+export default Layout;
