@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { StarRating } from './StarRating';
@@ -10,7 +9,7 @@ interface ReviewListProps {
   mentorId: string;
 }
 
-const ReviewList: React.FC<ReviewListProps> = ({ mentorId }) => {
+export const ReviewList: React.FC<ReviewListProps> = ({ mentorId }) => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
