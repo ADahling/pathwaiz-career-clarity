@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import './PaymentHistory.css';
@@ -6,8 +7,20 @@ interface PaymentHistoryProps {
   userId: string;
 }
 
+interface Payment {
+  id: string;
+  booking_id: string;
+  user_id: string;
+  amount: number;
+  status: string;
+  payment_method: string;
+  created_at: string;
+  transaction_id?: string;
+  bookings?: any;
+}
+
 const PaymentHistory: React.FC<PaymentHistoryProps> = ({ userId }) => {
-  const [payments, setPayments] = useState<any[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -20,6 +33,9 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({ userId }) => {
       setLoading(true);
       setError('');
 
+      // Since the 'payments' table doesn't exist yet, we'll use mock data
+      // This would be the real query once the table exists:
+      /*
       const { data, error } = await supabase
         .from('payments')
         .select(`
@@ -34,8 +50,55 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({ userId }) => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-
       setPayments(data || []);
+      */
+      
+      // Mock data for development
+      const mockPayments: Payment[] = [
+        {
+          id: '1',
+          booking_id: '101',
+          user_id: userId,
+          amount: 50,
+          status: 'succeeded',
+          payment_method: 'card',
+          created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
+          transaction_id: 'txn_' + Math.random().toString(36).substring(2, 10),
+          bookings: {
+            id: '101',
+            session_type: 'Quick Advice',
+            date: new Date().toISOString(),
+            time: '14:00',
+            mentors: {
+              name: 'Jane Smith',
+              profile_image: 'https://randomuser.me/api/portraits/women/32.jpg'
+            }
+          }
+        },
+        {
+          id: '2',
+          booking_id: '102',
+          user_id: userId,
+          amount: 100,
+          status: 'succeeded',
+          payment_method: 'paypal',
+          created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(), // 7 days ago
+          transaction_id: 'txn_' + Math.random().toString(36).substring(2, 10),
+          bookings: {
+            id: '102',
+            session_type: 'Deep Dive',
+            date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 6).toISOString(), // 6 days ago
+            time: '10:30',
+            mentors: {
+              name: 'John Doe',
+              profile_image: 'https://randomuser.me/api/portraits/men/44.jpg'
+            }
+          }
+        }
+      ];
+      
+      setPayments(mockPayments);
+      
     } catch (err) {
       console.error('Error fetching payment history:', err);
       setError('Failed to load payment history. Please try again.');

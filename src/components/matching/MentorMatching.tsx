@@ -62,10 +62,7 @@ export const MentorMatching: React.FC = () => {
   
   const handleQuestionnaireComplete = async (answers: any) => {
     if (!user) {
-      toast({
-        description: "Please sign in to save your preferences and see mentor matches.",
-        variant: "destructive"
-      });
+      toast("Please sign in to save your preferences and see mentor matches.");
       return;
     }
     
@@ -97,9 +94,7 @@ export const MentorMatching: React.FC = () => {
       setHasCompletedQuestionnaire(true);
       setActiveTab('results');
       
-      toast({
-        description: "We've found mentors that match your preferences!",
-      });
+      toast("We've found mentors that match your preferences!");
     } catch (error) {
       handleError(error, "Failed to generate mentor matches");
     } finally {

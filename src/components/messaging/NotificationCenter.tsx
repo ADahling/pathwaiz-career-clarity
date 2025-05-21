@@ -6,8 +6,19 @@ interface NotificationCenterProps {
   userId: string;
 }
 
+// Define notification type
+interface Notification {
+  id: string;
+  user_id: string;
+  message: string;
+  type: string;
+  read: boolean;
+  link?: string;
+  created_at: string;
+}
+
 const NotificationCenter: React.FC<NotificationCenterProps> = ({ userId }) => {
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [unreadCount, setUnreadCount] = useState(0);
@@ -16,9 +27,13 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ userId }) => {
   useEffect(() => {
     fetchNotifications();
     
+    // Commented out the real-time subscription since the 'notifications' table doesn't exist yet
+    // We'll use mock data instead for now
+    
+    /*
     // Set up real-time subscription for new notifications
     const subscription = supabase
-      .channel(`notifications:user_id=eq.${userId}`)
+      .channel('public:notifications')
       .on('INSERT', payload => {
         setNotifications(currentNotifications => [payload.new, ...currentNotifications]);
         setUnreadCount(count => count + 1);
@@ -28,6 +43,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ userId }) => {
     return () => {
       subscription.unsubscribe();
     };
+    */
   }, [userId]);
 
   const fetchNotifications = async () => {
@@ -35,6 +51,9 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ userId }) => {
       setLoading(true);
       setError('');
 
+      // Since the 'notifications' table doesn't exist, we'll use mock data
+      // This would be the real query once the table exists:
+      /*
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
@@ -43,11 +62,44 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ userId }) => {
         .limit(20);
 
       if (error) throw error;
-
       setNotifications(data || []);
+      */
+      
+      // Mock data for development
+      const mockNotifications: Notification[] = [
+        {
+          id: '1',
+          user_id: userId,
+          message: 'Your booking with Jane Smith has been confirmed',
+          type: 'booking',
+          read: false,
+          link: '/bookings/1',
+          created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString() // 30 min ago
+        },
+        {
+          id: '2',
+          user_id: userId,
+          message: 'You received a new message from John Doe',
+          type: 'message',
+          read: true,
+          link: '/messaging',
+          created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString() // 2 hours ago
+        },
+        {
+          id: '3',
+          user_id: userId,
+          message: 'Payment for your session with John Doe was successful',
+          type: 'payment',
+          read: false,
+          link: '/payments',
+          created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() // 1 day ago
+        }
+      ];
+      
+      setNotifications(mockNotifications);
       
       // Count unread notifications
-      const unread = data?.filter(notification => !notification.read).length || 0;
+      const unread = mockNotifications.filter(notification => !notification.read).length || 0;
       setUnreadCount(unread);
     } catch (err) {
       console.error('Error fetching notifications:', err);
@@ -59,13 +111,17 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ userId }) => {
 
   const handleMarkAsRead = async (notificationId: string) => {
     try {
+      // Since the 'notifications' table doesn't exist yet, we'll just update local state
+      // This would be the real update once the table exists:
+      /*
       const { error } = await supabase
         .from('notifications')
         .update({ read: true })
         .eq('id', notificationId);
 
       if (error) throw error;
-
+      */
+      
       // Update local state
       setNotifications(currentNotifications => 
         currentNotifications.map(notification => 
@@ -89,13 +145,17 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ userId }) => {
       
       if (unreadIds.length === 0) return;
       
+      // Since the 'notifications' table doesn't exist yet, we'll just update local state
+      // This would be the real update once the table exists:
+      /*
       const { error } = await supabase
         .from('notifications')
         .update({ read: true })
         .in('id', unreadIds);
 
       if (error) throw error;
-
+      */
+      
       // Update local state
       setNotifications(currentNotifications => 
         currentNotifications.map(notification => ({ ...notification, read: true }))

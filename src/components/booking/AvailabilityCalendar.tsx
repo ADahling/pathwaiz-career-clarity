@@ -73,15 +73,15 @@ export const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({ ment
 
       // Process data into events
       if (availabilityData) {
-        setAvailabilities(availabilityData as Availability[]);
+        setAvailabilities(availabilityData as unknown as Availability[]);
       }
       
       if (exceptionData) {
-        setAvailabilityExceptions(exceptionData as AvailabilityException[]);
+        setAvailabilityExceptions(exceptionData as unknown as AvailabilityException[]);
       }
       
       if (bookingData) {
-        setBookings(bookingData as Booking[]);
+        setBookings(bookingData as unknown as Booking[]);
       }
       
       // Convert data to calendar events
