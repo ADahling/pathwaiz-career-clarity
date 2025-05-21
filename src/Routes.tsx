@@ -1,6 +1,9 @@
+
 import React from 'react';
 import { Routes as RouterRoutes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { Layout } from '@/components/Layout';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 // Import pages
 const Booking = React.lazy(() => import('@/pages/Booking'));
@@ -30,19 +33,35 @@ const Routes: React.FC = () => {
         {/* Protected routes */}
         <Route 
           path="/booking/:mentorId" 
-          element={user ? <Booking /> : <Navigate to="/auth" />} 
+          element={
+            <ProtectedRoute>
+              <Booking />
+            </ProtectedRoute>
+          } 
         />
         <Route 
           path="/payment/:bookingId" 
-          element={user ? <Payment /> : <Navigate to="/auth" />} 
+          element={
+            <ProtectedRoute>
+              <Payment />
+            </ProtectedRoute>
+          } 
         />
         <Route 
           path="/messaging" 
-          element={user ? <MessagingPage /> : <Navigate to="/auth" />} 
+          element={
+            <ProtectedRoute>
+              <MessagingPage />
+            </ProtectedRoute>
+          } 
         />
         <Route 
           path="/video-session/:sessionId" 
-          element={user ? <VideoSessionPage /> : <Navigate to="/auth" />} 
+          element={
+            <ProtectedRoute>
+              <VideoSessionPage />
+            </ProtectedRoute>
+          } 
         />
         <Route 
           path="/mentor/:mentorId" 
@@ -50,7 +69,11 @@ const Routes: React.FC = () => {
         />
         <Route 
           path="/mentee/:menteeId" 
-          element={user ? <MenteeProfile /> : <Navigate to="/auth" />} 
+          element={
+            <ProtectedRoute>
+              <MenteeProfile />
+            </ProtectedRoute>
+          } 
         />
         
         {/* Fallback route */}

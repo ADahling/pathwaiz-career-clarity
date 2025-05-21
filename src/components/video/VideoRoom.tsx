@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from '@/components/ui/sonner';
 import './VideoRoom.css';
+import { VideoSession } from '@/types/supabase';
 
 interface VideoRoomProps {
   sessionId: string;
@@ -24,6 +27,8 @@ const VideoRoom: React.FC<VideoRoomProps> = ({ sessionId, userId, userRole, onEn
   
   const localVideoRef = React.useRef<HTMLVideoElement>(null);
   const remoteVideoRef = React.useRef<HTMLVideoElement>(null);
+  
+  const { user } = useAuth();
   
   useEffect(() => {
     fetchSessionDetails();
