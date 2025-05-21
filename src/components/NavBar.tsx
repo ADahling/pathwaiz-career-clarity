@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -5,12 +6,12 @@ import { cn } from '@/lib/utils';
 import { navLinks } from './navbar/navLinks';
 import MobileMenu from './navbar/MobileMenu';
 import AuthButtons from './navbar/AuthButtons';
-import { useMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export const NavBar: React.FC = () => {
   const { user, signOut } = useAuth();
   const location = useLocation();
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   const [scrolled, setScrolled] = useState<boolean>(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
@@ -41,6 +42,11 @@ export const NavBar: React.FC = () => {
       return location.pathname === path;
     }
     return location.pathname.startsWith(path);
+  };
+  
+  const handleProfileClick = () => {
+    // Navigate to profile based on user role
+    // Will be implemented later
   };
 
   return (
@@ -76,7 +82,7 @@ export const NavBar: React.FC = () => {
         </nav>
 
         <div className="flex items-center space-x-4">
-          {!isMobile && <AuthButtons />}
+          {!isMobile && <AuthButtons onProfileClick={handleProfileClick} />}
           
           {/* Mobile menu button */}
           {isMobile && (
@@ -123,7 +129,12 @@ export const NavBar: React.FC = () => {
       </div>
 
       {/* Mobile menu */}
-      {mobileMenuOpen && <MobileMenu />}
+      {mobileMenuOpen && <MobileMenu 
+        isOpen={mobileMenuOpen} 
+        onClose={toggleMobileMenu} 
+        onProfileClick={handleProfileClick} 
+        currentPath={location.pathname} 
+      />}
     </header>
   );
 };
