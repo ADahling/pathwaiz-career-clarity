@@ -1,4 +1,10 @@
-import { SupabaseError } from '@supabase/supabase-js';
+// Define custom error type to replace SupabaseError
+export interface SupabaseErrorType {
+  code: string;
+  message: string;
+  details?: string;
+  error_description?: string;
+}
 
 // Error types
 export enum ErrorType {
@@ -32,7 +38,7 @@ export interface AppError {
 }
 
 // Error mapping functions
-export function mapSupabaseError(error: SupabaseError): AppError {
+export function mapSupabaseError(error: SupabaseErrorType): AppError {
   // Map Supabase error codes to our error types
   let type = ErrorType.UNKNOWN;
   let severity = ErrorSeverity.ERROR;

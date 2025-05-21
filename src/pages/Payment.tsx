@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { enhancedSupabase } from '@/integrations/supabase/mockClient';
+import { supabase } from '@/integrations/supabase/client'; // Use the direct import
 import { useAuth } from '@/contexts/AuthContext';
 import PaymentForm from '@/components/payment/PaymentForm';
 import SubscriptionOptions from '@/components/payment/SubscriptionOptions';
@@ -22,8 +23,8 @@ const Payment = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   
-  const [booking, setBooking] = useState(null);
-  const [mentor, setMentor] = useState(null);
+  const [booking, setBooking] = useState<any>(null);
+  const [mentor, setMentor] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [paymentSuccess, setPaymentSuccess] = useState(false);
@@ -46,8 +47,8 @@ const Payment = () => {
           throw new Error('Booking ID is required');
         }
         
-        // Fetch booking data from Supabase
-        const { data: booking, error } = await enhancedSupabase
+        // Fetch booking data from Supabase - fix the query
+        const { data: booking, error } = await supabase
           .from('bookings')
           .select('*, mentor:mentor_id(id, name, hourly_rate)')
           .eq('id', bookingId)
@@ -68,11 +69,11 @@ const Payment = () => {
             status: 'pending',
             payment_status: 'pending',
             created_at: new Date().toISOString(),
-            mentors: {
+            mentor: {
               id: 'mentor-1',
-              name: 'Mentor Name', // We don't have name in the data yet
+              name: 'Mentor Name', 
               hourly_rate: 75,
-              profileImage: 'https://randomuser.me/api/portraits/men/32.jpg' // Placeholder
+              profileImage: 'https://randomuser.me/api/portraits/men/32.jpg'
             }
           };
           
@@ -86,11 +87,11 @@ const Payment = () => {
         } else {
           setBooking(booking);
           
-          // Extract mentor info
+          // Extract mentor info from the joined data
           const mentorInfo = {
-            id: booking.mentor.id,
-            name: booking.mentor.name,
-            hourlyRate: booking.mentor.hourly_rate || 75,
+            id: booking.mentor?.id || 'unknown',
+            name: booking.mentor?.name || 'Unknown Mentor',
+            hourlyRate: booking.mentor?.hourly_rate || 75,
             profileImage: 'https://randomuser.me/api/portraits/men/32.jpg' // Placeholder
           };
           

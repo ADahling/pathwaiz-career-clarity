@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { useErrorContext } from '@/contexts/ErrorContext';
 import { OpenAI } from 'openai';
@@ -72,8 +71,8 @@ class MatchingService {
         .select(`
           id,
           name,
-          job_title as title,
-          industry as company,
+          job_title,
+          industry,
           bio,
           years_experience,
           hourly_rate,
@@ -84,10 +83,10 @@ class MatchingService {
       
       // Transform the data to match the MentorProfile interface
       const transformedMentors: MentorProfile[] = (data || []).map(mentor => ({
-        id: mentor.id,
+        id: mentor.id || '',
         name: mentor.name || '',
-        title: mentor.title || '',
-        company: mentor.company || '',
+        title: mentor.job_title || '',
+        company: mentor.industry || '',
         bio: mentor.bio || '',
         expertise: [], // We'll need to add this data or fetch from another table
         years_experience: mentor.years_experience || 0,
