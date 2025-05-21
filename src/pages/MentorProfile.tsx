@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,7 +8,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { ReviewList } from '@/components/reviews/ReviewList';
-import { AvailabilityCalendar } from '@/components/availability/AvailabilityCalendar';
+import { AvailabilityCalendar } from '@/components/booking/AvailabilityCalendar'; // Fixed import path
 import { Loader2 } from 'lucide-react';
 
 const MentorProfile: React.FC = () => {
@@ -95,7 +96,7 @@ const MentorProfile: React.FC = () => {
 
       <div className="mt-8">
         <h2 className="text-2xl font-bold mb-4">Availability</h2>
-        <AvailabilityCalendar mentorId={mentorProfile?.id} />
+        <AvailabilityCalendar mentorId={mentorProfile?.id} onBook={(start, end) => {}} />
       </div>
 
       <div className="mt-8">
