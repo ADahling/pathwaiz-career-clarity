@@ -11,3 +11,4 @@ console.warn(
 // Export the real client to allow existing code to continue working
 // while migrations are being performed
 export const enhancedSupabase = supabase;
+export default supabase;

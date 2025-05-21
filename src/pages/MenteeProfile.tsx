@@ -17,16 +17,12 @@ const MenteeProfile = () => {
       try {
         setLoading(true);
         // Placeholder for actual API call
-        const { data, error } = await supabase
-          .from('mentees')
-          .select('*, profiles(*)')
-          .eq('id', user?.id)
-          .single();
+        const { data: menteeProfile, error } = await supabase.from('mentee_profiles').select('*').eq('id', user.id).single();
 
         if (error) throw error;
 
         // If no data from API, use placeholder data
-        if (!data) {
+        if (!menteeProfile) {
           setProfile({
             id: user?.id,
             name: 'Jamie Smith',
@@ -71,7 +67,7 @@ const MenteeProfile = () => {
             ]
           });
         } else {
-          setProfile(data);
+          setProfile(menteeProfile);
         }
       } catch (error) {
         console.error('Error fetching profile:', error);

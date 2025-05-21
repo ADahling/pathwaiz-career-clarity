@@ -6,13 +6,20 @@ import './VideoRoom.css';
 import { VideoSession } from '@/types/supabase';
 
 interface VideoRoomProps {
-  sessionId: string;
-  userId: string;
-  userRole: 'mentor' | 'mentee';
-  onEnd?: () => void;
+  bookingId: string;
+  mentorId: string;
+  menteeId: string;
+  sessionDuration: number;
+  onSessionEnd: () => void;
 }
 
-const VideoRoom: React.FC<VideoRoomProps> = ({ sessionId, userId, userRole, onEnd }) => {
+const VideoRoom: React.FC<VideoRoomProps> = ({
+  bookingId,
+  mentorId,
+  menteeId,
+  sessionDuration,
+  onSessionEnd
+}) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [sessionDetails, setSessionDetails] = useState<any>(null);
@@ -47,7 +54,7 @@ const VideoRoom: React.FC<VideoRoomProps> = ({ sessionId, userId, userRole, onEn
       
       clearInterval(timer);
     };
-  }, [sessionId, userId]);
+  }, [bookingId, mentorId, menteeId]);
   
   const fetchSessionDetails = async () => {
     try {
@@ -61,7 +68,7 @@ const VideoRoom: React.FC<VideoRoomProps> = ({ sessionId, userId, userRole, onEn
           mentors:mentor_id(*),
           mentees:mentee_id(*)
         `)
-        .eq('id', sessionId)
+        .eq('id', bookingId)
         .single();
         
       if (error) throw error;
@@ -189,7 +196,7 @@ const VideoRoom: React.FC<VideoRoomProps> = ({ sessionId, userId, userRole, onEn
       const { error } = await supabase
         .from('bookings')
         .update({ status: 'completed' })
-        .eq('id', sessionId);
+        .eq('id', bookingId);
         
       if (error) throw error;
       
@@ -198,8 +205,8 @@ const VideoRoom: React.FC<VideoRoomProps> = ({ sessionId, userId, userRole, onEn
         localStream.getTracks().forEach(track => track.stop());
       }
       
-      if (onEnd) {
-        onEnd();
+      if (onSessionEnd) {
+        onSessionEnd();
       }
     } catch (err) {
       console.error('Error ending session:', err);
@@ -375,7 +382,7 @@ const VideoRoom: React.FC<VideoRoomProps> = ({ sessionId, userId, userRole, onEn
         >
           {isMuted ? (
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z" clipRule="evenodd" />
+              <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clipRule="evenodd" />
             </svg>
           ) : (
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -395,7 +402,7 @@ const VideoRoom: React.FC<VideoRoomProps> = ({ sessionId, userId, userRole, onEn
             </svg>
           ) : (
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+              <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" />
             </svg>
           )}
           <span className="control-label">{isVideoOff ? 'Start Video' : 'Stop Video'}</span>

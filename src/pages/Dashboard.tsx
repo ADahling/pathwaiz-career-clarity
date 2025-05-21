@@ -41,7 +41,9 @@ import {
   Bookmark,
   CheckCircle,
   AlertCircle,
-  Loader2
+  Loader2,
+  Plus,
+  BookOpen
 } from 'lucide-react';
 import {
   AreaChart,
@@ -152,7 +154,7 @@ const Dashboard = () => {
       <div className="premium-card bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 rounded-xl shadow-lg">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
           <div>
-            <h2 className="text-2xl font-bold mb-2">Welcome back, {user?.displayName || 'Mentor'}</h2>
+            <h2 className="text-2xl font-bold mb-2">Welcome back, {user?.email || 'Mentor'}</h2>
             <p className="opacity-90">You have {mentorStats.upcomingSessions.length} upcoming sessions and {mentorStats.notifications.filter(n => !n.read).length} new notifications</p>
           </div>
           <div className="mt-4 md:mt-0 flex space-x-3">
@@ -939,7 +941,7 @@ const Dashboard = () => {
       <div className="premium-card bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 rounded-xl shadow-lg">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
           <div>
-            <h2 className="text-2xl font-bold mb-2">Welcome back, {user?.displayName || 'Mentee'}</h2>
+            <h2 className="text-2xl font-bold mb-2">Welcome back, {user?.email || 'Mentee'}</h2>
             <p className="opacity-90">You have {menteeStats.upcomingSessions.length} upcoming sessions and {menteeStats.notifications.filter(n => !n.read).length} new notifications</p>
           </div>
           <div className="mt-4 md:mt-0 flex space-x-3">

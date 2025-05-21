@@ -29,9 +29,9 @@ export function useApi<T = any>() {
       return { data, error: null };
     } catch (error: any) {
       const appError = error instanceof Error ? error : new Error(errorMessage);
-      const enhancedError = captureError(appError);
-      setState({ data: null, loading: false, error: enhancedError });
-      return { data: null, error: enhancedError };
+      captureError(appError); // Just capture the error
+      setState({ data: null, loading: false, error: appError }); // Use the error directly
+      return { data: null, error: appError };
     }
   }, [captureError]);
 

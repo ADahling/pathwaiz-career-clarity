@@ -47,25 +47,15 @@ const Payment = () => {
         }
         
         // Fetch booking data from Supabase
-        const { data: bookingData, error: bookingError } = await enhancedSupabase
+        const { data: booking, error } = await enhancedSupabase
           .from('bookings')
-          .select(`
-            *,
-            mentors:mentor_id (
-              id, 
-              hourly_rate,
-              profiles:id (
-                role,
-                id
-              )
-            )
-          `)
+          .select('*, mentor:mentor_id(id, name, hourly_rate)')
           .eq('id', bookingId)
           .single();
           
-        if (bookingError) throw bookingError;
+        if (error) throw error;
         
-        if (!bookingData) {
+        if (!booking) {
           // If no data, use placeholder for development
           const placeholderBooking = {
             id: bookingId,
@@ -80,11 +70,9 @@ const Payment = () => {
             created_at: new Date().toISOString(),
             mentors: {
               id: 'mentor-1',
+              name: 'Mentor Name', // We don't have name in the data yet
               hourly_rate: 75,
-              profiles: {
-                role: 'mentor',
-                id: 'mentor-1'
-              }
+              profileImage: 'https://randomuser.me/api/portraits/men/32.jpg' // Placeholder
             }
           };
           
@@ -96,13 +84,13 @@ const Payment = () => {
             profileImage: 'https://randomuser.me/api/portraits/men/32.jpg'
           });
         } else {
-          setBooking(bookingData);
+          setBooking(booking);
           
           // Extract mentor info
           const mentorInfo = {
-            id: bookingData.mentors.id,
-            name: 'Mentor Name', // We don't have name in the data yet
-            hourlyRate: bookingData.mentors.hourly_rate || 75,
+            id: booking.mentor.id,
+            name: booking.mentor.name,
+            hourlyRate: booking.mentor.hourly_rate || 75,
             profileImage: 'https://randomuser.me/api/portraits/men/32.jpg' // Placeholder
           };
           

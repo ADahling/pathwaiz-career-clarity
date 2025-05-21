@@ -1,3 +1,4 @@
+
 interface EnvConfig {
   supabaseUrl: string;
   supabaseAnonKey: string;
@@ -9,6 +10,9 @@ interface EnvConfig {
   enableVideoCall: boolean;
   enableMessaging: boolean;
   enableAnalytics: boolean;
+  openai: {
+    apiKey: string;
+  };
 }
 
 // Helper function to get environment variables with validation
@@ -44,7 +48,10 @@ export const env: EnvConfig = {
   isProduction: getEnvVariable('NODE_ENV') === 'production',
   enableVideoCall: getBooleanEnvVariable('VITE_ENABLE_VIDEO_CALLS', true),
   enableMessaging: getBooleanEnvVariable('VITE_ENABLE_MESSAGING', true),
-  enableAnalytics: getBooleanEnvVariable('VITE_ENABLE_ANALYTICS', true)
+  enableAnalytics: getBooleanEnvVariable('VITE_ENABLE_ANALYTICS', true),
+  openai: {
+    apiKey: getEnvVariable('VITE_OPENAI_API_KEY', '')
+  }
 };
 
 // Validate required environment variables

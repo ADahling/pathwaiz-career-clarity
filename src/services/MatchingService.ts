@@ -1,6 +1,7 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { useErrorContext } from '@/contexts/ErrorContext';
-import { Configuration, OpenAIApi } from 'openai';
+import { OpenAI } from 'openai';
 import { env } from '@/config/env';
 
 // Define types for mentor matching
@@ -45,15 +46,14 @@ export interface MatchingPreferences {
 }
 
 class MatchingService {
-  private openai: OpenAIApi | null = null;
+  private openai: OpenAI | null = null;
   
   constructor() {
     try {
       if (env.openai.apiKey) {
-        const configuration = new Configuration({
-          apiKey: env.openai.apiKey,
+        this.openai = new OpenAI({
+          apiKey: env.openai.apiKey
         });
-        this.openai = new OpenAIApi(configuration);
       } else {
         console.warn('OpenAI API key not found. AI-powered matching will be limited.');
       }
@@ -68,27 +68,39 @@ class MatchingService {
   async fetchMentors(): Promise<MentorProfile[]> {
     try {
       const { data, error } = await supabase
-        .from('mentors')
+        .from('mentor_profiles')
         .select(`
           id,
           name,
-          title,
-          company,
+          job_title as title,
+          industry as company,
           bio,
-          expertise,
           years_experience,
           hourly_rate,
-          communication_style,
-          mentorship_style,
-          availability,
-          rating,
-          reviews_count,
           profile_image
         `);
 
       if (error) throw error;
       
-      return data || [];
+      // Transform the data to match the MentorProfile interface
+      const transformedMentors: MentorProfile[] = (data || []).map(mentor => ({
+        id: mentor.id,
+        name: mentor.name || '',
+        title: mentor.title || '',
+        company: mentor.company || '',
+        bio: mentor.bio || '',
+        expertise: [], // We'll need to add this data or fetch from another table
+        years_experience: mentor.years_experience || 0,
+        hourly_rate: mentor.hourly_rate || 0,
+        communication_style: 'direct', // Default value
+        mentorship_style: 'coaching', // Default value
+        availability: [], // We'll need to fetch this separately
+        rating: 0, // Default value
+        reviews_count: 0, // Default value
+        profile_image: mentor.profile_image || ''
+      }));
+      
+      return transformedMentors;
     } catch (error) {
       console.error('Error fetching mentors:', error);
       throw error;
@@ -114,7 +126,8 @@ class MatchingService {
         throw error;
       }
       
-      return data as MatchingPreferences;
+      // The data structure already matches our MatchingPreferences interface
+      return data as unknown as MatchingPreferences;
     } catch (error) {
       console.error('Error fetching user preferences:', error);
       throw error;
@@ -137,8 +150,8 @@ class MatchingService {
       // Prepare the prompt for OpenAI
       const prompt = this.buildOpenAIPrompt(mentors, preferences);
       
-      // Call OpenAI API
-      const response = await this.openai.createChatCompletion({
+      // Call OpenAI API - updated to use the newer SDK
+      const response = await this.openai.chat.completions.create({
         model: "gpt-4",
         messages: [
           {
@@ -155,7 +168,7 @@ class MatchingService {
       });
 
       // Parse the response
-      const content = response.data.choices[0]?.message?.content;
+      const content = response.choices[0]?.message?.content;
       if (!content) {
         throw new Error('No response from OpenAI');
       }

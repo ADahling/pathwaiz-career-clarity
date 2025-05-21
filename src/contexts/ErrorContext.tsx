@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState } from 'react';
 import { toast } from '@/components/ui/sonner';
 
 interface ErrorContextType {
-  captureError: (error: any, message?: string) => void;
+  captureError: (error: any, message?: string) => any; // Updated to return any
   handleError: (error: any, message?: string) => void;
 }
 
@@ -27,6 +27,7 @@ export const ErrorProvider: React.FC<ErrorProviderProps> = ({ children }) => {
   const captureError = (error: any, message?: string) => {
     console.error('Error captured:', error);
     setErrors((prevErrors) => [...prevErrors, { error, message }]);
+    return error; // Return the error so it can be used in the calling code
   };
 
   const handleError = (error: any, message?: string) => {

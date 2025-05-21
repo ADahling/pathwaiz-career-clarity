@@ -119,6 +119,44 @@ export type Database = {
           },
         ]
       }
+      mentee_preferences: {
+        Row: {
+          career_preferences: Json
+          communication_preferences: Json
+          created_at: string
+          id: string
+          mentorship_preferences: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          career_preferences?: Json
+          communication_preferences?: Json
+          created_at?: string
+          id?: string
+          mentorship_preferences?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          career_preferences?: Json
+          communication_preferences?: Json
+          created_at?: string
+          id?: string
+          mentorship_preferences?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentee_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mentee_profiles: {
         Row: {
           career_goals: string | null
@@ -189,6 +227,44 @@ export type Database = {
           {
             foreignKeyName: "mentor_availability_mentor_id_fkey"
             columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mentor_matches: {
+        Row: {
+          created_at: string
+          id: string
+          match_reasons: string[] | null
+          match_score: number
+          mentor_id: string
+          rank: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          match_reasons?: string[] | null
+          match_score?: number
+          mentor_id: string
+          rank: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          match_reasons?: string[] | null
+          match_score?: number
+          mentor_id?: string
+          rank?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentor_matches_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
