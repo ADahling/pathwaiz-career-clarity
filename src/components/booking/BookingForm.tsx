@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import Calendar from '@/components/booking/calendar/Calendar';
 import { useAuth } from '@/contexts/AuthContext';
+import { useError } from '@/contexts/ErrorContext';
 import './BookingForm.css';
 
 interface BookingFormProps {
@@ -12,6 +13,7 @@ interface BookingFormProps {
 
 const BookingForm: React.FC<BookingFormProps> = ({ mentor, onClose }) => {
   const { user } = useAuth();
+  const { captureError } = useError();
   const navigate = useNavigate();
   
   const [step, setStep] = useState(1);
@@ -23,14 +25,32 @@ const BookingForm: React.FC<BookingFormProps> = ({ mentor, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [sessionDuration, setSessionDuration] = useState<number>(60); // Default to 60 minutes
+  const [sessionPrice, setSessionPrice] = useState<number>(0);
 
-  // Session types based on mentor's expertise
-  const sessionTypes = mentor?.expertise || [
-    'Career Guidance', 
-    'Resume Review', 
-    'Interview Preparation', 
-    'Skill Development',
-    'Industry Insights'
+  // Session types with durations and price ranges
+  const sessionOptions = [
+    { 
+      type: 'Quick Advice', 
+      duration: 15, 
+      priceRange: '$20-50',
+      description: 'Get targeted advice on a specific question',
+      bestFor: ['Specific questions', 'Career direction validation', 'Quick resume feedback']
+    },
+    { 
+      type: 'Deep Dive', 
+      duration: 30, 
+      priceRange: '$40-100',
+      description: 'Explore topics in greater depth',
+      bestFor: ['Interview preparation', 'Career transition strategy', 'Portfolio review']
+    },
+    { 
+      type: 'Comprehensive Session', 
+      duration: 60, 
+      priceRange: '$80-200',
+      description: 'Full mentoring session with detailed feedback',
+      bestFor: ['In-depth career planning', 'Skill gap analysis', 'Extensive portfolio review', 'Detailed project feedback']
+    }
   ];
 
   useEffect(() => {
@@ -38,9 +58,46 @@ const BookingForm: React.FC<BookingFormProps> = ({ mentor, onClose }) => {
     setError('');
   }, [step]);
 
+  useEffect(() => {
+    // Calculate session price based on mentor's rate and session duration
+    if (mentor && sessionDuration) {
+      let baseRate = 0;
+      
+      // Get mentor's hourly rate or use default based on expertise level
+      const hourlyRate = mentor.hourlyRate || 100;
+      
+      // Calculate price based on duration
+      switch(sessionDuration) {
+        case 15:
+          baseRate = Math.round(hourlyRate * 0.25);
+          // Ensure price is within the Quick Advice range ($20-50)
+          baseRate = Math.max(20, Math.min(50, baseRate));
+          break;
+        case 30:
+          baseRate = Math.round(hourlyRate * 0.5);
+          // Ensure price is within the Deep Dive range ($40-100)
+          baseRate = Math.max(40, Math.min(100, baseRate));
+          break;
+        case 60:
+        default:
+          baseRate = hourlyRate;
+          // Ensure price is within the Comprehensive Session range ($80-200)
+          baseRate = Math.max(80, Math.min(200, baseRate));
+          break;
+      }
+      
+      setSessionPrice(baseRate);
+    }
+  }, [mentor, sessionDuration]);
+
   const handleTimeSelected = (date: Date, time: string) => {
     setSelectedDate(date);
     setSelectedTime(time);
+  };
+
+  const handleSessionTypeChange = (type: string, duration: number) => {
+    setSessionType(type);
+    setSessionDuration(duration);
   };
 
   const handleNextStep = () => {
@@ -85,6 +142,10 @@ const BookingForm: React.FC<BookingFormProps> = ({ mentor, onClose }) => {
       // Format date and time for database
       const formattedDate = selectedDate.toISOString().split('T')[0];
       
+      // Calculate mentor share (80%) and platform fee (20%)
+      const mentorShare = sessionPrice * 0.8;
+      const platformFee = sessionPrice * 0.2;
+      
       // Create booking in Supabase
       const { data, error: bookingError } = await supabase
         .from('bookings')
@@ -95,9 +156,14 @@ const BookingForm: React.FC<BookingFormProps> = ({ mentor, onClose }) => {
             date: formattedDate,
             time: selectedTime,
             session_type: sessionType,
+            duration: sessionDuration,
             topic: sessionTopic,
             notes: additionalNotes,
+            price: sessionPrice,
+            mentor_share: mentorShare,
+            platform_fee: platformFee,
             status: 'pending',
+            payment_status: 'unpaid',
             created_at: new Date().toISOString()
           }
         ])
@@ -122,17 +188,17 @@ const BookingForm: React.FC<BookingFormProps> = ({ mentor, onClose }) => {
 
       setSuccess(true);
       
-      // Reset form
+      // Redirect to payment page
       setTimeout(() => {
-        if (onClose) {
-          onClose();
+        if (data && data[0]) {
+          navigate(`/payment/${data[0].id}`);
         } else {
           navigate('/dashboard');
         }
-      }, 3000);
+      }, 1500);
 
     } catch (error) {
-      console.error('Error creating booking:', error);
+      captureError(error);
       setError('Failed to create booking. Please try again.');
     } finally {
       setLoading(false);
@@ -204,14 +270,27 @@ const BookingForm: React.FC<BookingFormProps> = ({ mentor, onClose }) => {
         
         <div className="booking-form-group">
           <label className="booking-label">Session Type</label>
-          <div className="booking-session-types">
-            {sessionTypes.map((type, index) => (
+          <div className="booking-session-options">
+            {sessionOptions.map((option, index) => (
               <div 
                 key={index}
-                className={`booking-session-type ${sessionType === type ? 'selected' : ''}`}
-                onClick={() => setSessionType(type)}
+                className={`booking-session-option ${sessionType === option.type ? 'selected' : ''}`}
+                onClick={() => handleSessionTypeChange(option.type, option.duration)}
               >
-                {type}
+                <div className="session-option-header">
+                  <span className="session-option-duration">{option.duration} min</span>
+                  <span className="session-option-type">{option.type}</span>
+                  <span className="session-option-price">{option.priceRange}</span>
+                </div>
+                <p className="session-option-description">{option.description}</p>
+                <div className="session-option-best-for">
+                  <span>Best for:</span>
+                  <ul>
+                    {option.bestFor.map((item, i) => (
+                      <li key={i}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             ))}
           </div>
@@ -267,6 +346,10 @@ const BookingForm: React.FC<BookingFormProps> = ({ mentor, onClose }) => {
       day: 'numeric'
     }) : '';
 
+    // Calculate mentor share and platform fee
+    const mentorShare = sessionPrice * 0.8;
+    const platformFee = sessionPrice * 0.2;
+
     return (
       <div className="booking-step-content">
         <h3 className="booking-step-title">Confirm Your Booking</h3>
@@ -293,6 +376,11 @@ const BookingForm: React.FC<BookingFormProps> = ({ mentor, onClose }) => {
           </div>
           
           <div className="booking-summary-item">
+            <div className="booking-summary-label">Duration</div>
+            <div className="booking-summary-value">{sessionDuration} minutes</div>
+          </div>
+          
+          <div className="booking-summary-item">
             <div className="booking-summary-label">Topic</div>
             <div className="booking-summary-value">{sessionTopic}</div>
           </div>
@@ -304,9 +392,23 @@ const BookingForm: React.FC<BookingFormProps> = ({ mentor, onClose }) => {
             </div>
           )}
           
-          <div className="booking-summary-item">
-            <div className="booking-summary-label">Session Fee</div>
-            <div className="booking-summary-value">${mentor.hourlyRate || 75}</div>
+          <div className="booking-summary-pricing">
+            <div className="booking-summary-item">
+              <div className="booking-summary-label">Session Fee</div>
+              <div className="booking-summary-value booking-price">${sessionPrice.toFixed(2)}</div>
+            </div>
+            
+            <div className="booking-summary-breakdown">
+              <div className="booking-summary-item mentor-share">
+                <div className="booking-summary-label">Mentor Share (80%)</div>
+                <div className="booking-summary-value">${mentorShare.toFixed(2)}</div>
+              </div>
+              
+              <div className="booking-summary-item platform-fee">
+                <div className="booking-summary-label">Platform Fee (20%)</div>
+                <div className="booking-summary-value">${platformFee.toFixed(2)}</div>
+              </div>
+            </div>
           </div>
         </div>
         
@@ -321,8 +423,8 @@ const BookingForm: React.FC<BookingFormProps> = ({ mentor, onClose }) => {
             <svg xmlns="http://www.w3.org/2000/svg" className="booking-success-icon" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
             </svg>
-            <h3>Booking Confirmed!</h3>
-            <p>Your session with {mentor.name} has been scheduled. You'll receive a confirmation email shortly.</p>
+            <h3>Booking Created!</h3>
+            <p>Redirecting to payment page...</p>
           </div>
         ) : (
           <div className="booking-actions">
@@ -344,7 +446,7 @@ const BookingForm: React.FC<BookingFormProps> = ({ mentor, onClose }) => {
                   Processing...
                 </>
               ) : (
-                'Confirm Booking'
+                'Proceed to Payment'
               )}
             </button>
           </div>

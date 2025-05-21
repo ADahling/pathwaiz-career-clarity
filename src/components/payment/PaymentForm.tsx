@@ -25,6 +25,19 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ bookingId, amount, onSuccess,
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [booking, setBooking] = useState<any>(null);
   
+  // Calculate mentor payout and platform fee based on 80/20 split
+  const calculatePaymentBreakdown = (totalAmount: number) => {
+    const mentorShare = totalAmount * 0.8; // 80% to mentor
+    const platformFee = totalAmount * 0.2; // 20% to platform
+    
+    return {
+      mentorShare: parseFloat(mentorShare.toFixed(2)),
+      platformFee: parseFloat(platformFee.toFixed(2))
+    };
+  };
+  
+  const { mentorShare, platformFee } = calculatePaymentBreakdown(amount);
+  
   useEffect(() => {
     if (!bookingId) return;
     
@@ -101,7 +114,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ bookingId, amount, onSuccess,
         
       if (error) throw error;
       
-      // Create payment record
+      // Create payment record with mentor/platform split
       const { error: paymentError } = await supabase
         .from('payments')
         .insert([
@@ -109,6 +122,8 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ bookingId, amount, onSuccess,
             booking_id: bookingId,
             user_id: user?.id,
             amount,
+            mentor_share: mentorShare,
+            platform_fee: platformFee,
             currency: 'USD',
             status: 'succeeded',
             payment_method: paymentMethod,
@@ -164,6 +179,21 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ bookingId, amount, onSuccess,
     day: 'numeric'
   });
   
+  // Determine session duration and type
+  const getDurationFromSessionType = (sessionType: string) => {
+    switch(sessionType.toLowerCase()) {
+      case 'quick advice':
+        return '15 minutes';
+      case 'deep dive':
+        return '30 minutes';
+      case 'comprehensive session':
+      default:
+        return '60 minutes';
+    }
+  };
+  
+  const sessionDuration = getDurationFromSessionType(booking.session_type);
+  
   return (
     <div className="payment-form">
       <div className="payment-form-header">
@@ -199,7 +229,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ bookingId, amount, onSuccess,
           </div>
           <div className="payment-form-detail">
             <span className="payment-form-label">Duration:</span>
-            <span className="payment-form-value">60 minutes</span>
+            <span className="payment-form-value">{sessionDuration}</span>
           </div>
         </div>
         
@@ -207,6 +237,16 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ bookingId, amount, onSuccess,
           <div className="payment-form-subtotal">
             <span>Subtotal</span>
             <span>${amount.toFixed(2)}</span>
+          </div>
+          <div className="payment-form-breakdown">
+            <div className="payment-form-mentor-share">
+              <span>Mentor Share (80%)</span>
+              <span>${mentorShare.toFixed(2)}</span>
+            </div>
+            <div className="payment-form-platform-fee">
+              <span>Platform Fee (20%)</span>
+              <span>${platformFee.toFixed(2)}</span>
+            </div>
           </div>
           <div className="payment-form-tax">
             <span>Tax</span>
