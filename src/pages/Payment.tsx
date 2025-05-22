@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client'; 
@@ -46,12 +47,12 @@ const Payment = () => {
           throw new Error('Booking ID is required');
         }
         
-        // Fix the query by specifying the exact relationship path using mentor_profiles
+        // Modify the query to use a specific join with mentor_id as the foreign key
         const { data: bookingData, error } = await supabase
           .from('bookings')
           .select(`
             *,
-            mentor_profiles:mentor_id (
+            mentor:mentor_id (
               id,
               name,
               hourly_rate
@@ -75,7 +76,7 @@ const Payment = () => {
             status: 'pending',
             payment_status: 'pending',
             created_at: new Date().toISOString(),
-            mentor_profiles: {
+            mentor: {
               id: 'mentor-1',
               name: 'Mentor Name', 
               hourly_rate: 75
@@ -92,11 +93,11 @@ const Payment = () => {
         } else {
           setBooking(bookingData);
           
-          // Extract mentor info from the joined data using mentor_profiles
+          // Extract mentor info from the joined data
           const mentorInfo = {
-            id: bookingData.mentor_profiles?.id || 'unknown',
-            name: bookingData.mentor_profiles?.name || 'Unknown Mentor',
-            hourlyRate: bookingData.mentor_profiles?.hourly_rate || 75,
+            id: bookingData.mentor?.id || 'unknown',
+            name: bookingData.mentor?.name || 'Unknown Mentor',
+            hourlyRate: bookingData.mentor?.hourly_rate || 75,
             profileImage: 'https://randomuser.me/api/portraits/men/32.jpg' // Placeholder
           };
           
