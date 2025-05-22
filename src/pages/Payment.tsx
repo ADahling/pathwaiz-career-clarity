@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client'; // Use the direct import
+import { supabase } from '@/integrations/supabase/client'; 
 import { useAuth } from '@/contexts/AuthContext';
 import PaymentForm from '@/components/payment/PaymentForm';
 import SubscriptionOptions from '@/components/payment/SubscriptionOptions';
@@ -47,16 +46,23 @@ const Payment = () => {
           throw new Error('Booking ID is required');
         }
         
-        // Fetch booking data from Supabase - fix the query
-        const { data: booking, error } = await supabase
+        // Fixed: Modify the query to correctly specify the relationship
+        const { data: bookingData, error } = await supabase
           .from('bookings')
-          .select('*, mentor:mentor_id(id, name, hourly_rate)')
+          .select(`
+            *,
+            mentor:mentor_id (
+              id,
+              name,
+              hourly_rate
+            )
+          `)
           .eq('id', bookingId)
           .single();
           
         if (error) throw error;
         
-        if (!booking) {
+        if (!bookingData) {
           // If no data, use placeholder for development
           const placeholderBooking = {
             id: bookingId,
@@ -85,13 +91,13 @@ const Payment = () => {
             profileImage: 'https://randomuser.me/api/portraits/men/32.jpg'
           });
         } else {
-          setBooking(booking);
+          setBooking(bookingData);
           
           // Extract mentor info from the joined data
           const mentorInfo = {
-            id: booking.mentor?.id || 'unknown',
-            name: booking.mentor?.name || 'Unknown Mentor',
-            hourlyRate: booking.mentor?.hourly_rate || 75,
+            id: bookingData.mentor?.id || 'unknown',
+            name: bookingData.mentor?.name || 'Unknown Mentor',
+            hourlyRate: bookingData.mentor?.hourly_rate || 75,
             profileImage: 'https://randomuser.me/api/portraits/men/32.jpg' // Placeholder
           };
           
