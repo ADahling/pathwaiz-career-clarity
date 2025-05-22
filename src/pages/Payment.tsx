@@ -47,12 +47,12 @@ const Payment = () => {
           throw new Error('Booking ID is required');
         }
         
-        // Modify the query to use a specific join with mentor_id as the foreign key
+        // Use the query with explicit reference to mentor_profiles table
         const { data: bookingData, error } = await supabase
           .from('bookings')
           .select(`
             *,
-            mentor:mentor_id (
+            mentors:mentor_profiles!mentor_id (
               id,
               name,
               hourly_rate
@@ -76,7 +76,7 @@ const Payment = () => {
             status: 'pending',
             payment_status: 'pending',
             created_at: new Date().toISOString(),
-            mentor: {
+            mentors: {
               id: 'mentor-1',
               name: 'Mentor Name', 
               hourly_rate: 75
@@ -95,9 +95,9 @@ const Payment = () => {
           
           // Extract mentor info from the joined data
           const mentorInfo = {
-            id: bookingData.mentor?.id || 'unknown',
-            name: bookingData.mentor?.name || 'Unknown Mentor',
-            hourlyRate: bookingData.mentor?.hourly_rate || 75,
+            id: bookingData.mentors?.id || 'unknown',
+            name: bookingData.mentors?.name || 'Unknown Mentor',
+            hourlyRate: bookingData.mentors?.hourly_rate || 75,
             profileImage: 'https://randomuser.me/api/portraits/men/32.jpg' // Placeholder
           };
           
