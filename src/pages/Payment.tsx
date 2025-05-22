@@ -46,12 +46,12 @@ const Payment = () => {
           throw new Error('Booking ID is required');
         }
         
-        // Fixed: Modify the query to correctly specify the relationship
+        // Fix the query by specifying the exact relationship path using mentor_profiles
         const { data: bookingData, error } = await supabase
           .from('bookings')
           .select(`
             *,
-            mentor:mentor_id (
+            mentor_profiles:mentor_id (
               id,
               name,
               hourly_rate
@@ -75,11 +75,10 @@ const Payment = () => {
             status: 'pending',
             payment_status: 'pending',
             created_at: new Date().toISOString(),
-            mentor: {
+            mentor_profiles: {
               id: 'mentor-1',
               name: 'Mentor Name', 
-              hourly_rate: 75,
-              profileImage: 'https://randomuser.me/api/portraits/men/32.jpg'
+              hourly_rate: 75
             }
           };
           
@@ -93,11 +92,11 @@ const Payment = () => {
         } else {
           setBooking(bookingData);
           
-          // Extract mentor info from the joined data
+          // Extract mentor info from the joined data using mentor_profiles
           const mentorInfo = {
-            id: bookingData.mentor?.id || 'unknown',
-            name: bookingData.mentor?.name || 'Unknown Mentor',
-            hourlyRate: bookingData.mentor?.hourly_rate || 75,
+            id: bookingData.mentor_profiles?.id || 'unknown',
+            name: bookingData.mentor_profiles?.name || 'Unknown Mentor',
+            hourlyRate: bookingData.mentor_profiles?.hourly_rate || 75,
             profileImage: 'https://randomuser.me/api/portraits/men/32.jpg' // Placeholder
           };
           
