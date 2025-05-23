@@ -47,21 +47,14 @@ const Payment = () => {
           throw new Error('Booking ID is required');
         }
         
-        // Use the query with explicit reference to mentor_profiles table
-        const { data: bookingData, error } = await supabase
+        // First fetch the booking data
+        const { data: bookingData, error: bookingError } = await supabase
           .from('bookings')
-          .select(`
-            *,
-            mentors:mentor_profiles!mentor_id (
-              id,
-              name,
-              hourly_rate
-            )
-          `)
+          .select('*')
           .eq('id', bookingId)
           .single();
           
-        if (error) throw error;
+        if (bookingError) throw bookingError;
         
         if (!bookingData) {
           // If no data, use placeholder for development
@@ -75,12 +68,7 @@ const Payment = () => {
             topic: 'Transitioning to product management',
             status: 'pending',
             payment_status: 'pending',
-            created_at: new Date().toISOString(),
-            mentors: {
-              id: 'mentor-1',
-              name: 'Mentor Name', 
-              hourly_rate: 75
-            }
+            created_at: new Date().toISOString()
           };
           
           setBooking(placeholderBooking);
@@ -93,15 +81,33 @@ const Payment = () => {
         } else {
           setBooking(bookingData);
           
-          // Extract mentor info from the joined data
-          const mentorInfo = {
-            id: bookingData.mentors?.id || 'unknown',
-            name: bookingData.mentors?.name || 'Unknown Mentor',
-            hourlyRate: bookingData.mentors?.hourly_rate || 75,
-            profileImage: 'https://randomuser.me/api/portraits/men/32.jpg' // Placeholder
-          };
+          // Now fetch the mentor profile separately
+          const { data: mentorData, error: mentorError } = await supabase
+            .from('mentor_profiles')
+            .select('id, name, hourly_rate, profile_image')
+            .eq('id', bookingData.mentor_id)
+            .single();
           
-          setMentor(mentorInfo);
+          if (mentorError) {
+            console.error('Error fetching mentor:', mentorError);
+            // Use placeholder mentor data if mentor not found
+            setMentor({
+              id: bookingData.mentor_id,
+              name: 'Unknown Mentor',
+              hourlyRate: 75,
+              profileImage: 'https://randomuser.me/api/portraits/men/32.jpg'
+            });
+          } else {
+            // Extract mentor info from the fetched data
+            const mentorInfo = {
+              id: mentorData.id,
+              name: mentorData.name || 'Unknown Mentor',
+              hourlyRate: mentorData.hourly_rate || 75,
+              profileImage: mentorData.profile_image || 'https://randomuser.me/api/portraits/men/32.jpg'
+            };
+            
+            setMentor(mentorInfo);
+          }
         }
       } catch (error) {
         console.error('Error fetching booking details:', error);
