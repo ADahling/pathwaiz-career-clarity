@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 import Index from '@/pages/Index';
 import Auth from '@/pages/Auth';
 import FindAMentor from '@/pages/FindAMentor';
@@ -15,21 +15,19 @@ import Payment from '@/pages/Payment';
 
 const AppRoutes: React.FC = () => {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/find-a-mentor" element={<FindAMentor />} />
-        <Route path="/how-it-works" element={<HowItWorks />} />
-        <Route path="/pricing" element={<Pricing />} />
-        <Route path="/booking/:mentorId" element={<Booking />} />
-        <Route path="/payment/:bookingId" element={<Payment />} />
-        <Route path="/onboarding" element={<Onboarding />} />
-        <Route path="/mentee-profile" element={<MenteeProfile />} />
-        <Route path="/mentor-profile" element={<MentorProfile />} />
-        <Route path="/admin/api-keys" element={<ApiKeyManager />} />
-      </Routes>
-    </Router>
+    <Routes>
+      <Route path="/" element={<Index />} />
+      <Route path="/auth" element={<Auth />} />
+      <Route path="/find-a-mentor" element={<FindAMentor />} />
+      <Route path="/how-it-works" element={<HowItWorks />} />
+      <Route path="/pricing" element={<Pricing />} />
+      <Route path="/booking/:mentorId" element={<Booking />} />
+      <Route path="/payment/:bookingId" element={<Payment />} />
+      <Route path="/onboarding" element={<Onboarding />} />
+      <Route path="/mentee-profile" element={<MenteeProfile />} />
+      <Route path="/mentor-profile" element={<MentorProfile />} />
+      <Route path="/admin/api-keys" element={<ApiKeyManager />} />
+    </Routes>
   );
 };
 
