@@ -37,12 +37,12 @@ function getBooleanEnvVariable(key: string, defaultValue: boolean): boolean {
   return value === 'true' || value === '1';
 }
 
-// Export environment configuration
+// Export environment configuration with actual Supabase values
 export const env: EnvConfig = {
-  supabaseUrl: getEnvVariable('VITE_SUPABASE_URL'),
-  supabaseAnonKey: getEnvVariable('VITE_SUPABASE_ANON_KEY'),
-  stripePublishableKey: getEnvVariable('VITE_STRIPE_PUBLISHABLE_KEY'),
-  apiBaseUrl: getEnvVariable('VITE_API_BASE_URL'),
+  supabaseUrl: getEnvVariable('VITE_SUPABASE_URL', 'https://sgctvgyzikwdogqudjzr.supabase.co'),
+  supabaseAnonKey: getEnvVariable('VITE_SUPABASE_ANON_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNnY3R2Z3l6aWt3ZG9ncXVkanpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc2OTAwMjMsImV4cCI6MjA2MzI2NjAyM30.u28O7pc-mT065D54BKjega7owIVGZYN-nI4SgAhG80s'),
+  stripePublishableKey: getEnvVariable('VITE_STRIPE_PUBLISHABLE_KEY', ''),
+  apiBaseUrl: getEnvVariable('VITE_API_BASE_URL', 'https://sgctvgyzikwdogqudjzr.supabase.co'),
   environment: getEnvVariable('NODE_ENV', 'development'),
   isDevelopment: getEnvVariable('NODE_ENV', 'development') === 'development',
   isProduction: getEnvVariable('NODE_ENV') === 'production',
